@@ -33,8 +33,11 @@ header h1 small{display:block;font-size:11px;font-weight:600;color:var(--accent)
 .btn:active{transform:scale(.97)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.sm{min-height:40px;font-size:14px;padding:0 12px}
-#strip{position:sticky;top:0;z-index:20;display:flex;gap:12px;align-items:center;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.25)}
-.vbox{flex:none;min-width:112px;text-align:center;padding:8px 10px;border-radius:12px;border:2px solid;font-weight:800;font-size:22px;line-height:1.1;letter-spacing:.4px}
+#strip .top{display:flex;gap:12px;align-items:center}
+#strip .checks{margin-top:14px}
+#strip p.note{margin:12px 0 0}
+.more{width:100%;margin-top:8px}
+.vbox{flex:none;min-width:124px;text-align:center;padding:8px 10px;border-radius:12px;border:2px solid;font-weight:800;font-size:22px;line-height:1.1;letter-spacing:.4px}
 .vbox small{display:block;font-size:10px;font-weight:700;letter-spacing:.7px;opacity:.85;margin-top:3px}
 .v-pass{color:var(--good);border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
 .v-fail{color:var(--bad);border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
@@ -68,6 +71,9 @@ small.h{display:block;color:var(--muted);font-size:13px;margin-top:5px;line-heig
 .sec2{display:flex;gap:10px;margin-top:10px}
 .sec2 .btn{flex:1}
 .list{margin-top:12px}
+.crit{margin-top:12px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:14px;color:var(--muted);line-height:1.35}
+.crit b{font-family:var(--mono);color:var(--text)}
+.crit .btn{flex:none}
 .rw{display:grid;grid-template-columns:54px 1fr 70px 62px;gap:8px;align-items:center;padding:10px 8px;border-radius:12px;border-left:4px solid transparent;cursor:pointer;min-height:52px}
 .rw:nth-child(odd){background:var(--panel2)}
 .rw.inwin{border-left-color:var(--accent)}
@@ -78,8 +84,8 @@ small.h{display:block;color:var(--muted);font-size:13px;margin-top:5px;line-heig
 .rw.hd span:nth-child(n+3){text-align:right}
 .bad{color:var(--bad)}.good{color:var(--good)}.warnc{color:var(--warn)}
 .checks{margin:0;padding:0;list-style:none;display:grid;gap:10px;font-size:16px}
-.checks li{display:flex;gap:10px;align-items:flex-start}
-.checks li::before{content:"";flex:none;width:12px;height:12px;border-radius:50%;margin-top:6px;background:var(--muted)}
+.checks li{position:relative;padding-left:24px}
+.checks li::before{content:"";position:absolute;left:0;top:7px;width:12px;height:12px;border-radius:50%;background:var(--muted)}
 .checks li.ok::before{background:var(--good)}.checks li.no::before{background:var(--bad)}
 .facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .fact{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
@@ -110,12 +116,11 @@ footer{padding:6px 16px 28px;text-align:center;color:var(--muted);font-size:12.5
 </head>
 <body>
 <header>
-  <h1>JJ's Pressure Test Analyzer<small>MOBILE · REV 1.1</small></h1>
+  <h1>JJ's Pressure Test Analyzer<small>MOBILE · REV 1.2</small></h1>
   <button class="btn sm" id="newTest">＋ New test</button>
 </header>
-<div id="strip"></div>
 <main>
-  <section class="card" id="setup"></section>
+  <section class="card" id="strip"></section>
   <section class="card" id="entryCard">
     <h2>1-minute readings</h2>
     <div class="entry">
@@ -125,27 +130,29 @@ footer{padding:6px 16px 28px;text-align:center;color:var(--muted);font-size:12.5
     </div>
     <div class="sec2"><button class="btn" id="skip">Skip a minute</button><button class="btn" id="undoLast">Undo last</button></div>
     <div id="entryMsg" class="note" hidden></div>
+    <div class="crit" id="critLine"></div>
     <div class="list" id="list"></div>
   </section>
+  <section class="card" id="setup"></section>
   <section class="card" id="result"></section>
   <section class="card" id="shareCard">
     <button class="btn pri" id="share" style="width:100%">Share / copy result</button>
   </section>
 </main>
-<footer>Mobile version for quick checks in the field. The desktop version (REV 1.7) adds file import, chart selection and best-period tools.<br>This is a calculation aid. Confirm results against your official test criteria.</footer>
+<footer>Mobile version for quick checks in the field. The desktop version adds file import, chart selection and best-period tools.<br>This is a calculation aid. Confirm results against your official test criteria.</footer>
 <div id="sheet" hidden><div class="box" id="sheetBox"></div></div>
 <div id="toast" role="status"></div>
 
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
-const MREV = "1.1";
+const MREV = "1.2";
 const KEY = "pressureMobile.v1";
 const TILES = [1, 5, 10];
 const MAXROWS = 3000;
 const defaults = () => ({test: "", duration: 15, interval: 60, window: 5, limit: 5, incl: false,
   pMin: 5000, pMaxOver: "", overPct: 5, rateMin: 5, ambTol: 25, maxLossBy: {"15": 75}, reqTrend: true, tol: 0.25,
-  mode: "best", cFrom: "", cTo: "", unit: "psi", src: null, anch: null, rows: [], setupOpen: true});
+  mode: "best", cFrom: "", cTo: "", unit: "psi", src: null, anch: null, rows: [], setupOpen: false});
 let S = defaults();
 try {
   const j = JSON.parse(localStorage.getItem(KEY));
@@ -347,6 +354,14 @@ function setupSummary() {
   const ml = S.maxLossBy[String(S.duration)], hasMl = ml !== undefined && String(ml).trim() !== "";
   return `<b>${S.duration} min</b> test · ${bandOf() ? `<b>${nf(bandOf().min)}</b> psi minimum (max ${nf(bandOf().max)})` : "no pressure check"} · loss <b>${S.incl ? "≤" : "<"} ${S.limit}</b> psi/min${hasMl ? ` · total loss ≤ <b>${ml}</b> psi` : ""}`;
 }
+function renderCrit() {
+  $("#critLine").innerHTML = `<span>${setupSummary()}</span><button class="btn sm" id="critChange">Change</button>`;
+}
+$("#critLine").addEventListener("click", e => {
+  if (!e.target.closest("#critChange")) return;
+  S.setupOpen = true; render();
+  $("#setup").scrollIntoView({behavior: "smooth", block: "start"});
+});
 function renderSetup() {
   const el = $("#setup");
   if (!S.setupOpen) { el.innerHTML = `<h2>Test criteria</h2><div class="sum"><div class="t">${setupSummary()}</div><button class="btn sm" id="setupEdit">Change</button></div>`; return; }
@@ -473,16 +488,43 @@ function verdict(M) {
   const txt = !O.rangeOk ? (O.firstBelow >= 0 ? `BELOW ${nf(M.pMin)}` : `ABOVE ${nf(M.pMax)}`) : !O.rs.rateOk ? (S.incl ? `ABOVE ${rtxt}` : `${rtxt}+`) : !O.lossOk ? `OVER ${M.maxLoss} TOTAL` : (S.reqTrend && !O.trendOk) ? "GETTING WORSE" : (S.incl ? `≤ ${rtxt}` : `UNDER ${rtxt}`);
   return {cls: (reasons.length ? "v-fail" : "v-pass") + " v-prov", txt: "KEEP GOING", sub: txt, reasons};
 }
+function buildChecks(M) {
+  const O = M.overall, main = [], more = [];
+  if (!O) return {main, more};
+  if (M.pMin > 0) {
+    const bits = [];
+    if (O.firstBelow >= 0) bits.push(`dropped below ${nf(M.pMin)} at minute ${O.firstBelow} (low ${nf(O.lo)})`);
+    if (O.firstAbove >= 0) bits.push(`went above ${nf(M.pMax)} at minute ${O.firstAbove} (high ${nf(O.hi)})`);
+    main.push(`<li class="${O.rangeOk ? "ok" : "no"}">${O.rangeOk ? `Pressure stayed between ${nf(M.pMin)} and ${nf(M.pMax)} (${nf(O.lo)} to ${nf(O.hi)})` : `Pressure must stay between ${nf(M.pMin)} and ${nf(M.pMax)}: it ${bits.join(" and ")}`}</li>`);
+  }
+  const rl = M.rateMin > 0 ? `last ${M.rateMin} min` : "whole test";
+  main.push(`<li class="${O.rs.rateOk ? "ok" : "no"}">Loss rate, ${rl}: <b>${fr(O.rs.rate)}</b> ${O.rs.rateOk ? (S.incl ? "≤" : "&lt;") : (S.incl ? "&gt;" : "≥")} ${M.lim} psi/min</li>`);
+  if (M.maxLoss !== null) main.push(`<li class="${O.lossOk ? "ok" : "no"}">Total loss <b>${fp(O.loss)}</b> ${O.lossOk ? "≤" : "&gt;"} ${M.maxLoss} psi</li>`);
+  const T = M.rateTrend;
+  main.push(T ? `<li class="${T.good ? "ok" : (S.reqTrend ? "no" : "")}">Loss trend: <b>${T.label.toLowerCase()}</b> (${fr(T.r1)} → ${fr(T.r2)} psi/min)</li>` : `<li>Loss trend: needs a reading between the start and end</li>`);
+  if (O.trend === "Rising") more.push(`<li class="ok">Pressure rose (a rise is not a failure)</li>`);
+  const B = M.bleed;
+  if (B && !B.none) more.push(`<li class="${B.ok ? "ok" : ""}">${B.ok ? `Bled down to 0 afterwards (${fp(B.min)} psi)` : `Not bled down to 0 yet (lowest after the test: ${fp(B.min)} psi)`}</li>`);
+  else if (B) more.push(`<li>After the test the pressure must be bled back down to 0.</li>`);
+  if (M.bestInfo) more.push(`<li>Best of ${M.bestInfo.total} possible ${S.duration}-minute stretches · <b>${M.bestInfo.pass}</b> meet every criterion</li>`);
+  return {main, more};
+}
 function renderStrip(M) {
-  const V = verdict(M), O = M.overall;
-  const have = M.idx.length ? `minute ${M.last}` : "no readings";
+  const V = verdict(M), O = M.overall, L = M.live;
   let line = `<b>—</b>no readings yet`;
-  const L = M.live;
   if (O && L && (L.kind === "build" || L.kind === "high" || L.kind === "start")) line = `<b>${nf(M.pts[M.last])} psi</b>${L.kind === "build" ? "pressure still building" : L.kind === "high" ? "above the maximum test pressure" : "reached test pressure at minute " + L.start}`;
   else if (O) line = `<b>${fr(O.rs.rate)} psi/min</b>${M.rateMin > 0 ? `last ${M.rateMin} min` : "whole test"} · ${M.complete ? "period" : "so far"} ${mmss((M.we - M.ws) * 60)} of ${S.duration}:00`;
   if (O && L && L.kind === "hold") line = line.replace(/·.*$/, `· ${mmss(L.minutes * 60)} of ${S.duration}:00 at test pressure`);
-  $("#strip").innerHTML = `<div class="vbox ${V.cls}">${V.txt}<small>${V.sub}</small></div><div class="vtext">${line}</div>`;
+  const note = L && L.kind === "build" ? `Pressure is still building toward ${nf(M.pMin)} psi. The test is judged once the pressure is in the test band (${nf(M.pMin)}–${nf(M.pMax)} psi).`
+    : L && L.kind === "start" ? `Test pressure reached at minute ${L.start}. Keep entering 1-minute readings: the ${S.duration}-minute test needs ${S.duration} minutes at pressure.`
+    : L && L.kind === "high" ? `The pressure is above ${nf(M.pMax)} psi, more than ${M.overPct}% over the minimum. Bleed it down into the band.` : "";
+  const {main} = buildChecks(M);
+  $("#strip").innerHTML = `<h2>Test result so far</h2><div class="top"><div class="vbox ${V.cls}">${V.txt}<small>${V.sub}</small></div><div class="vtext">${line}</div></div>
+    ${note ? `<p class="note">${note}</p>` : ""}
+    ${main.length ? `<ul class="checks">${main.join("")}</ul>` : `<div class="empty" style="padding:12px 0 0">Enter two or more 1-minute readings below to see the trend and the pass / fail result.</div>`}`;
 }
+let showAll = false;
+const SHOWN = 6;
 function renderList(M) {
   if (!S.rows.length) { $("#list").innerHTML = `<div class="empty">No readings yet. Type the first pressure above and tap Add.</div>`; return; }
   let prevV = null, prevI = -1, html = [];
@@ -496,43 +538,27 @@ function renderList(M) {
     prevV = v; prevI = i;
   }
   html.push(`<div class="rw hd"><span>Min</span><span>Pressure</span><span>Change</span><span>Loss/min</span></div>`);
-  for (let k = info.length - 1; k >= 0; k--) {
+  const stop = showAll ? 0 : Math.max(0, info.length - SHOWN);
+  for (let k = info.length - 1; k >= stop; k--) {
     const r = info[k], inW = M.ws >= 0 && r.i >= M.ws && r.i <= M.we;
     if (r.blank) { html.push(`<div class="rw${inW ? " inwin" : ""}" data-i="${r.i}"><span class="m">${r.i}</span><span class="v" style="color:var(--muted)">skipped</span><span></span><span></span></div>`); continue; }
     html.push(`<div class="rw${inW ? " inwin" : ""}" data-i="${r.i}"><span class="m">${r.i}</span><span class="v">${esc(nf(r.v))}</span><span class="d">${r.d === null ? "" : sgd(r.d)}</span><span class="l ${r.l === null ? "" : M.isOk(r.l) ? "good" : "bad"}">${r.l === null ? "" : fr(r.l) + (r.gap ? "*" : "")}</span></div>`);
   }
+  if (info.length > SHOWN) html.push(`<button class="btn more" id="moreRows">${showAll ? "Show only the last " + SHOWN : "Show all " + info.length + " readings"}</button>`);
   $("#list").innerHTML = html.join("");
 }
+$("#list").addEventListener("click", e => { if (e.target.id === "moreRows") { showAll = !showAll; render(); } });
 function renderResult(M) {
   const O = M.overall, el = $("#result"), u = "psi";
   if (!O) { el.innerHTML = `<h2>Result</h2><div class="empty">Enter at least two 1-minute readings to see the trend and the pass / fail result.</div>`; return; }
-  const clk = i => mmss(i * 60);
-  const checks = [];
-  if (M.pMin > 0) {
-    const bits = [];
-    if (O.firstBelow >= 0) bits.push(`dropped below ${nf(M.pMin)} at minute ${O.firstBelow} (low ${nf(O.lo)})`);
-    if (O.firstAbove >= 0) bits.push(`went above ${nf(M.pMax)} at minute ${O.firstAbove} (high ${nf(O.hi)})`);
-    checks.push(`<li class="${O.rangeOk ? "ok" : "no"}">${O.rangeOk ? `Pressure stayed between ${nf(M.pMin)} and ${nf(M.pMax)} (${nf(O.lo)} to ${nf(O.hi)})` : `Pressure must stay between ${nf(M.pMin)} and ${nf(M.pMax)}: it ${bits.join(" and ")}`}</li>`);
-  }
   const rl = M.rateMin > 0 ? `last ${M.rateMin} min` : "whole test";
-  checks.push(`<li class="${O.rs.rateOk ? "ok" : "no"}">Loss rate, ${rl}: <b>${fr(O.rs.rate)}</b> ${O.rs.rateOk ? (S.incl ? "≤" : "&lt;") : (S.incl ? "&gt;" : "≥")} ${M.lim} psi/min</li>`);
-  if (M.maxLoss !== null) checks.push(`<li class="${O.lossOk ? "ok" : "no"}">Total loss <b>${fp(O.loss)}</b> ${O.lossOk ? "≤" : "&gt;"} ${M.maxLoss} psi</li>`);
-  const T = M.rateTrend;
-  checks.push(T ? `<li class="${T.good ? "ok" : (S.reqTrend ? "no" : "")}">Loss trend: <b>${T.label.toLowerCase()}</b> (${fr(T.r1)} → ${fr(T.r2)} psi/min)</li>` : `<li>Loss trend: needs a reading between the start and end</li>`);
-  if (O.trend === "Rising") checks.push(`<li class="ok">Pressure rose (a rise is not a failure)</li>`);
-  const B = M.bleed;
-  if (B && !B.none) checks.push(`<li class="${B.ok ? "ok" : ""}">${B.ok ? `Bled down to 0 afterwards (${fp(B.min)} psi)` : `Not bled down to 0 yet (lowest after the test: ${fp(B.min)} psi)`}</li>`);
-  else if (B) checks.push(`<li>After the test the pressure must be bled back down to 0.</li>`);
-  if (M.bestInfo) checks.push(`<li>Best of ${M.bestInfo.total} possible ${S.duration}-minute stretches · <b>${M.bestInfo.pass}</b> meet every criterion</li>`);
+  const {more} = buildChecks(M);
   const f = (k, v, sub) => `<div class="fact"><div class="k">${k}</div><div class="v">${v}${sub ? ` <small>${sub}</small>` : ""}</div></div>`;
   const steps = M.steps.length > 40 ? M.steps.slice(-40) : M.steps;
   const L = M.live;
   const head = L && L.kind === "hold" ? `Result so far · at test pressure since minute ${L.start}` : L && (L.kind === "build" || L.kind === "start" || L.kind === "high") ? "Result · test still in progress" : `Result · ${M.mode === "best" ? "best" : "latest"} period, minutes ${M.ws}–${M.we}`;
-  el.innerHTML = `<h2>${head}</h2>
-    ${L && L.kind === "build" ? `<p class="note" style="margin:0 0 10px">Pressure is still building toward ${nf(M.pMin)} psi. The test is not judged until the pressure is in the test band (${nf(M.pMin)}–${nf(M.pMax)} psi). The numbers below are for the readings so far.</p>` : ""}
-    ${L && L.kind === "start" ? `<p class="note" style="margin:0 0 10px">Test pressure reached at minute ${L.start}. Keep entering 1-minute readings. The ${S.duration}-minute test needs ${S.duration} minutes at pressure.</p>` : ""}
-    ${L && L.kind === "high" ? `<p class="note" style="margin:0 0 10px">The pressure is above ${nf(M.pMax)} psi, more than ${M.overPct}% over the minimum. Bleed it down into the band.</p>` : ""}
-    <ul class="checks">${checks.join("")}</ul>
+  el.innerHTML = `<h2>${head.replace("Result", "Details")}</h2>
+    ${more.length ? `<ul class="checks" style="margin-bottom:4px">${more.join("")}</ul>` : ""}
     <div class="facts">${f("Period", mmss((M.we - M.ws) * 60), `of ${S.duration}:00`)}${f("Total loss", (O.loss < 0 ? "+" : "") + fp(Math.abs(O.loss)), "psi" + (O.loss < 0 ? " (rise)" : ""))}${f("Start", nf(O.start), u)}${f("End", nf(O.end), u)}${f("Lowest", nf(O.lo), u)}${f("Highest", nf(O.hi), u)}${f("Rate, whole period", fr(O.rate), "psi/min")}${f("Rate, " + rl, fr(O.rs.rate), "psi/min")}</div>
     ${steps.length ? `<div class="chain"><span class="s">Loss per minute:</span> ${M.steps.length > 40 ? "… → " : ""}${steps.map(r => `<span class="${M.isOk(r) ? "good" : "bad"}">${fr(r)}</span>`).join(" → ")}</div>` : ""}
     <svg class="chart" id="chart" viewBox="0 0 360 210" role="img" aria-label="Pressure by minute"></svg><div id="chartRead"></div>`;
@@ -591,6 +617,7 @@ $("#share").onclick = async () => {
 function render(keep) {
   const M = analyze(); LASTM = M; save();
   renderStrip(M);
+  renderCrit();
   if (keep === undefined || !keep || $("#setup").querySelector("#" + keep) === null || document.activeElement !== $("#" + keep)) renderSetup();
   $("#nextMin").textContent = "minute " + S.rows.length;
   renderList(M); renderResult(M);

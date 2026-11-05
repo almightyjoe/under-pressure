@@ -1,7 +1,11 @@
 # JJ's Pressure Test Analyzer — changelog
 
-## Web addresses (fixed)
-- Phone: `/` · Desktop: `/desktop/`. Both always serve the newest revision; older desktop revisions live in `desktop/archive/`. The revision number is no longer part of any web address.
+## REV 1.9 (desktop)
+- On narrow screens (phones, small tablets) the page order is: result so far, readings entry, then settings. Wide screens are unchanged.
+
+## MOBILE REV 1.2
+- Page order is now: **test result so far** (the KEEP GOING / PASS / FAIL card with the reasons), **1-minute reading entry**, **test criteria settings**, then the chart and details. The criteria summary sits under the entry box with a Change button.
+- The list shows the last 6 readings with a "Show all" button, so the settings stay close.
 
 ## REV 1.8 (desktop)
 - Phone-width screens: the pressure box in the readings list is wider, so a full reading such as 10000.5 fits (the Avg/min column is hidden at that width). Wider screens are unchanged.

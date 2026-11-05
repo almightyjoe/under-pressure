@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JJ's Pressure Test Analyzer REV 1.8</title>
+<title>JJ's Pressure Test Analyzer REV 1.9</title>
 <style>
 :root{
   --bg:#0e1319;--panel:#161d26;--panel2:#1c2531;--line:#263344;--text:#e6edf5;--muted:#8a98aa;
@@ -161,6 +161,16 @@ svg.chart{width:100%;height:auto;display:block}
 .hint{font-size:12px;color:var(--muted);margin:-6px 0 10px}
 #chartWrap{position:relative;cursor:crosshair;user-select:none;touch-action:none}
 #selBox{position:absolute;top:0;bottom:0;display:none;background:color-mix(in srgb,var(--accent) 22%,transparent);border-left:2px solid var(--accent);border-right:2px solid var(--accent);pointer-events:none}
+@media(max-width:940px){      /* narrow screens: the readings come first, the settings bar goes below */
+  #tab-live.on{display:flex;flex-direction:column;gap:16px}
+  #tab-live .grid,#tab-live .col{display:contents}
+  #status{order:1}                         /* 1. result so far */
+  #readCard{order:2}                       /* 2. enter the readings */
+  #tab-live .bar{order:3;margin:0}         /* 3. settings */
+  #secCard{order:4}#warns{order:5}
+  #status .tiles,#status .chain,#status .prog,#status .checks li:nth-child(n+5){display:none}   /* keep the result card short so the entry box is on the first screen */
+  #rows{max-height:52vh}
+}
 @media(max-width:640px){      /* phones: give the pressure box the room it needs (drop the Avg/min column) */
   main{padding:12px 10px 40px}.card{padding:12px}
   .rowhead,.row{grid-template-columns:22px 54px minmax(124px,1fr) 52px 52px;gap:5px}
@@ -176,7 +186,7 @@ svg.chart{width:100%;height:auto;display:block}
 <header>
   <div class="brand">
     <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v16h18"/><path d="M7 8l4 3 3 4 5 2"/></svg>
-    JJ's Pressure Test Analyzer <span class="rev">REV 1.8</span>
+    JJ's Pressure Test Analyzer <span class="rev">REV 1.9</span>
   </div>
   <nav role="tablist">
     <button class="tabbtn" role="tab" data-tab="live" aria-selected="true">Live Test</button>
@@ -207,7 +217,7 @@ svg.chart{width:100%;height:auto;display:block}
   </div>
 
   <div class="grid">
-    <div class="card">
+    <div class="card" id="readCard">
       <h2>Readings (<span class="u">psi</span>)</h2>
       <div class="hint">Type readings, or drop a CSV file anywhere on this page · <a href="#" id="pasteLink" style="color:var(--accent)">paste data</a></div>
       <div class="rowhead"><span>#</span><span title="Click a time to start the custom range there; Shift+click to end it there">Time</span><span>Pressure</span><span>Δ</span><span>Last/min</span><span title="Average loss per minute since the start of the evaluated window">Avg/min</span></div>
@@ -224,7 +234,7 @@ svg.chart{width:100%;height:auto;display:block}
 
     <div class="col">
       <div class="card" id="status"></div>
-      <div class="card"><h2>Sections in the evaluated window (<span id="secLabel"></span>)</h2><div class="tablewrap" id="sections"></div></div>
+      <div class="card" id="secCard"><h2>Sections in the evaluated window (<span id="secLabel"></span>)</h2><div class="tablewrap" id="sections"></div></div>
       <div class="notes" id="warns"></div>
     </div>
   </div>
@@ -267,7 +277,7 @@ svg.chart{width:100%;height:auto;display:block}
 
 <section class="tab" id="tab-help">
   <div class="card help">
-    <h2>How it works · REV 1.8</h2>
+    <h2>How it works · REV 1.9</h2>
     <p>Pick the test length (5, 10, 15, 30 min or custom) and the reading interval, then type each pressure into the next box as it comes off the gauge. <b>Enter</b> or <b>↓</b> goes to the next box, <b>↑</b> back. New rows appear as you type, so you can keep entering data every minute for hours. Everything is saved in the browser as you type.</p>
     <p><b>You do not have to fill every box.</b> Skip any minute you missed: all rates use the real time between the readings you did enter. Rows marked * show a rate that spans skipped readings.</p>
     <h3>Loading data from a file</h3>
@@ -305,7 +315,7 @@ svg.chart{width:100%;height:auto;display:block}
 
 <script>
 "use strict";
-const REV = "1.8", APP = "JJ's Pressure Test Analyzer";
+const REV = "1.9", APP = "JJ's Pressure Test Analyzer";
 const $ = s => document.querySelector(s);
 const KEY = "pressureTrend.v3";
 const DUR = [[5,"5 min"],[10,"10 min"],[15,"15 min"],[30,"30 min"]];
