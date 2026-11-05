@@ -1,5 +1,8 @@
 # JJ's Pressure Test Analyzer — changelog
 
+## Web addresses (fixed)
+- Phone: `/` · Desktop: `/desktop/`. Both always serve the newest revision; older desktop revisions live in `desktop/archive/`. The revision number is no longer part of any web address.
+
 ## REV 1.8 (desktop)
 - Phone-width screens: the pressure box in the readings list is wider, so a full reading such as 10000.5 fits (the Avg/min column is hidden at that width). Wider screens are unchanged.
 
