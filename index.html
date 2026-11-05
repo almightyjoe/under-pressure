@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1319">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pressure Test">
+<title>JJ's Pressure Test Analyzer · Mobile</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root{
+  --bg:#0e1319;--panel:#161d26;--panel2:#1d2733;--line:#2a3a4e;--text:#f1f5fa;--muted:#9aa9bc;
+  --accent:#3da9fc;--good:#35d07f;--bad:#ff6363;--warn:#ffb340;--shade:rgba(61,169,252,.16);
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,monospace;
+  color-scheme:dark light;
+}
+@media (prefers-color-scheme:light){:root{
+  --bg:#eef2f7;--panel:#fff;--panel2:#f3f6fa;--line:#cfd8e3;--text:#0f1823;--muted:#4f6073;
+  --accent:#0a66b5;--good:#16883f;--bad:#c9302c;--warn:#a85f00;--shade:rgba(10,102,181,.12);
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-size:17px;margin:0;font-weight:700;line-height:1.15;flex:1}
+header h1 small{display:block;font-size:11px;font-weight:600;color:var(--accent);letter-spacing:.8px;margin-top:2px}
+.btn{min-height:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:600 16px system-ui,sans-serif;cursor:pointer}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.sm{min-height:40px;font-size:14px;padding:0 12px}
+#strip{position:sticky;top:0;z-index:20;display:flex;gap:12px;align-items:center;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.vbox{flex:none;min-width:112px;text-align:center;padding:8px 10px;border-radius:12px;border:2px solid;font-weight:800;font-size:22px;line-height:1.1;letter-spacing:.4px}
+.vbox small{display:block;font-size:10px;font-weight:700;letter-spacing:.7px;opacity:.85;margin-top:3px}
+.v-pass{color:var(--good);border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.v-fail{color:var(--bad);border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.v-wait{color:var(--muted);border-color:var(--line);background:var(--panel2)}
+.v-prov{border-style:dashed}
+.vtext{min-width:0;font-size:14px;color:var(--muted);line-height:1.3}
+.vtext b{display:block;font-size:19px;color:var(--text);font-family:var(--mono)}
+main{padding:12px 12px 90px;max-width:640px;margin:0 auto;display:grid;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.card h2{margin:0 0 10px;font-size:13px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sum{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.sum .t{font-size:15px;line-height:1.35}
+.sum .t b{font-family:var(--mono)}
+label.f{display:block;margin:12px 0 6px;font-size:13px;color:var(--muted);font-weight:650}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:46px;min-width:64px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:600 16px system-ui,sans-serif;cursor:pointer}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+input[type=text],input[type=number]{width:100%;min-height:50px;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;color:var(--text);font:600 20px var(--mono);padding:0 14px;outline:none}
+input:focus{border-color:var(--accent)}
+.inl{display:flex;gap:8px;align-items:center}
+.inl input{flex:1}
+.inl span{color:var(--muted);font-size:15px;white-space:nowrap}
+.chk{display:flex;gap:12px;align-items:center;min-height:46px;font-size:16px}
+.chk input{width:24px;height:24px;accent-color:var(--accent)}
+details summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--accent);font-weight:650}
+small.h{display:block;color:var(--muted);font-size:13px;margin-top:5px;line-height:1.35}
+.entry{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.entry .ml{font-size:13px;color:var(--muted);font-weight:650;margin-bottom:6px}
+.entry .ml b{color:var(--text);font-size:15px}
+.entry .btn{min-height:54px;min-width:92px;font-size:18px}
+.sec2{display:flex;gap:10px;margin-top:10px}
+.sec2 .btn{flex:1}
+.list{margin-top:12px}
+.rw{display:grid;grid-template-columns:54px 1fr 70px 62px;gap:8px;align-items:center;padding:10px 8px;border-radius:12px;border-left:4px solid transparent;cursor:pointer;min-height:52px}
+.rw:nth-child(odd){background:var(--panel2)}
+.rw.inwin{border-left-color:var(--accent)}
+.rw .m{color:var(--muted);font-size:14px}
+.rw .v{font:700 20px var(--mono)}
+.rw .d,.rw .l{font:600 14px var(--mono);text-align:right}
+.rw.hd{cursor:default;min-height:30px;padding:2px 8px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);background:none!important}
+.rw.hd span:nth-child(n+3){text-align:right}
+.bad{color:var(--bad)}.good{color:var(--good)}.warnc{color:var(--warn)}
+.checks{margin:0;padding:0;list-style:none;display:grid;gap:10px;font-size:16px}
+.checks li{display:flex;gap:10px;align-items:flex-start}
+.checks li::before{content:"";flex:none;width:12px;height:12px;border-radius:50%;margin-top:6px;background:var(--muted)}
+.checks li.ok::before{background:var(--good)}.checks li.no::before{background:var(--bad)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.fact{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.fact .k{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.fact .v{font:700 20px var(--mono);margin-top:2px}
+.fact .v small{font:500 12px system-ui;color:var(--muted)}
+.chain{margin-top:14px;font:600 15px var(--mono);line-height:1.9;word-break:break-word}
+.chain .s{font:13px system-ui;color:var(--muted);margin-right:4px}
+svg.chart{width:100%;height:auto;display:block;touch-action:none;margin-top:6px}
+.chart text{fill:var(--muted);font:11px system-ui}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linejoin:round}
+.chart .band{stroke:var(--good);stroke-width:1.3;stroke-dasharray:6 4;fill:none}
+.chart .dot{fill:var(--accent)}
+.chart .win{fill:var(--shade)}
+#chartRead{min-height:24px;font:600 15px var(--mono);margin-top:6px}
+.note{color:var(--warn);font-size:14px;margin:8px 0 0}
+.empty{color:var(--muted);padding:16px 4px;text-align:center}
+#sheet{position:fixed;inset:0;background:rgba(5,8,12,.7);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+#sheet .box{width:min(640px,100%);background:var(--panel);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border:1px solid var(--line)}
+#sheet h3{margin:0 0 10px;font-size:18px}
+.btns{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btns .btn{flex:1;min-width:110px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--panel2);border:1px solid var(--accent);padding:12px 16px;border-radius:12px;opacity:0;transition:.2s;pointer-events:none;font-size:15px;z-index:60;max-width:92vw;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+footer{padding:6px 16px 28px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <h1>JJ's Pressure Test Analyzer<small>MOBILE · REV 1.1</small></h1>
+  <button class="btn sm" id="newTest">＋ New test</button>
+</header>
+<div id="strip"></div>
+<main>
+  <section class="card" id="setup"></section>
+  <section class="card" id="entryCard">
+    <h2>1-minute readings</h2>
+    <div class="entry">
+      <div><div class="ml">Next reading: <b id="nextMin">minute 0</b></div>
+      <input id="val" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" autocorrect="off" placeholder="Pressure (psi)" aria-label="Pressure reading"></div>
+      <button class="btn pri" id="add">Add</button>
+    </div>
+    <div class="sec2"><button class="btn" id="skip">Skip a minute</button><button class="btn" id="undoLast">Undo last</button></div>
+    <div id="entryMsg" class="note" hidden></div>
+    <div class="list" id="list"></div>
+  </section>
+  <section class="card" id="result"></section>
+  <section class="card" id="shareCard">
+    <button class="btn pri" id="share" style="width:100%">Share / copy result</button>
+  </section>
+</main>
+<footer>Mobile version for quick checks in the field. The desktop version (REV 1.7) adds file import, chart selection and best-period tools.<br>This is a calculation aid. Confirm results against your official test criteria.</footer>
+<div id="sheet" hidden><div class="box" id="sheetBox"></div></div>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const MREV = "1.1";
+const KEY = "pressureMobile.v1";
+const TILES = [1, 5, 10];
+const MAXROWS = 3000;
+const defaults = () => ({test: "", duration: 15, interval: 60, window: 5, limit: 5, incl: false,
+  pMin: 5000, pMaxOver: "", overPct: 5, rateMin: 5, ambTol: 25, maxLossBy: {"15": 75}, reqTrend: true, tol: 0.25,
+  mode: "best", cFrom: "", cTo: "", unit: "psi", src: null, anch: null, rows: [], setupOpen: true});
+let S = defaults();
+try {
+  const j = JSON.parse(localStorage.getItem(KEY));
+  if (j && typeof j === "object") {
+    S = Object.assign(S, j);
+    S.rows = (Array.isArray(S.rows) ? S.rows : []).slice(0, MAXROWS).map(String);
+    if (!S.maxLossBy || typeof S.maxLossBy !== "object") S.maxLossBy = defaults().maxLossBy;
+    S.interval = 60; S.window = 5; if (S.mode !== "latest") S.mode = "best"; S.anch = null; S.src = null;
+  }
+} catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+/* ---- calculation engine: identical to the desktop REV 1.6 ---- */
+/* ---------- helpers ---------- */
+const pos = (v, d) => (Number.isFinite(+v) && +v > 0 ? +v : d);
+const r6 = x => Math.round(x * 1e6) / 1e6;                       // kill floating-point noise before any comparison
+const fp = x => { let t = String(Math.round(x * 1000) / 1000); if (t === "-0") t = "0"; return t.includes(".") ? t : t + ".0"; };   // pressures / losses
+let curOk = r => r < 5;                                            // set by compute(): is this loss rate acceptable?
+const fr = x => { let t = x.toFixed(2); if (curOk(r6(x)) !== curOk(+t)) t = x.toFixed(4); return t === "-0.00" ? "0.00" : t; };   // rates: 2 decimals (more only if rounding would cross the limit)
+const sgn = x => (Math.abs(x) < 0.0005 ? "0.0" : (x > 0 ? "+" : "−") + fp(Math.abs(x)));
+const sgd = x => (Math.abs(x) < 0.0005 ? "0.0" : (x > 0 ? "+" : "−") + (Math.abs(x) >= 1000 ? Math.abs(x).toFixed(0) : Math.abs(x) >= 100 ? Math.abs(x).toFixed(1) : Math.abs(x) >= 10 ? Math.abs(x).toFixed(2) : fp(Math.abs(x))));   // row delta, kept short so big jumps fit
+const sgr = x => (Math.abs(x) < 0.005 ? "0.00" : (x > 0 ? "+" : "−") + Math.abs(x).toFixed(2));
+const mmss = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}` : `${m}:${String(x).padStart(2, "0")}`; };
+function clkRow(i) {                       // clock time of row i when the data came from a time-stamped file, else elapsed time
+  const I = pos(S.interval, 60);
+  if (S.anch && S.anch.iv === S.interval) { const t = new Date(S.anch.t0 + i * I * 1000).toISOString().slice(11, 19); return I % 60 === 0 && t.endsWith(":00") ? t.slice(0, 5) : t; }
+  return mmss(i * I);
+}
+const ARROW = {Decreasing:"▼ Decreasing", Rising:"▲ Rising", Flat:"■ Flat", Mixed:"◆ Mixed"};
+function toast(msg, ms = 1800){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("on"),ms); }
+function nTest() { return Math.max(1, Math.round(pos(S.duration, 15) * 60 / pos(S.interval, 60))); }
+function padRows() { const need = Math.min(MAXROWS, nTest() + 1); while (S.rows.length < need) S.rows.push(""); }
+const numOrNull = v => { const t = String(v).trim(); if (t === "") return null; const x = +t; return Number.isFinite(x) && x >= 0 ? x : NaN; };
+
+/* ---------- calculation ---------- */
+function compute() {
+  const I = pos(S.interval, 60), durSec = pos(S.duration, 15) * 60, Wsec = pos(S.window, 5) * 60;
+  const lim = Number.isFinite(+S.limit) && +S.limit >= 0 && String(S.limit) !== "" ? +S.limit : 5;
+  const isOk = r => (S.incl ? r6(r) <= lim : r6(r) < lim);
+  curOk = isOk;
+  const ml = S.maxLossBy[String(S.duration)];   // max total loss is set per test length
+  const maxLoss = ml === undefined || String(ml).trim() === "" || !Number.isFinite(+ml) ? null : +ml;
+  const tol = String(S.tol).trim() !== "" && Number.isFinite(+S.tol) && +S.tol >= 0 ? +S.tol : 0.25;
+  const pMin = Number.isFinite(+S.pMin) && +S.pMin > 0 ? +S.pMin : 0;                          // minimum test pressure (0 = range check off)
+  const overPct = String(S.overPct).trim() !== "" && Number.isFinite(+S.overPct) && +S.overPct >= 0 ? +S.overPct : 5;
+  const pOver = pMin > 0 && String(S.pMaxOver).trim() !== "" && Number.isFinite(+S.pMaxOver) && +S.pMaxOver > pMin ? +S.pMaxOver : null;   // optional exact maximum test pressure
+  const pMax = pMin > 0 ? (pOver !== null ? r6(pOver) : r6(pMin * (1 + overPct / 100))) : null;      // otherwise: must not exceed 5% over the minimum
+  const rateMin = String(S.rateMin).trim() !== "" && Number.isFinite(+S.rateMin) && +S.rateMin >= 0 ? +S.rateMin : 5;   // rate must be under the limit over the last N minutes (0 = whole window)
+  const ambTol = Number.isFinite(+S.ambTol) && +S.ambTol >= 0 ? +S.ambTol : 25;                // "0 psi" after the test = at or below this
+
+  const raw = S.rows.map(r => {
+    let t = String(r).trim();
+    if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, "");   // 4,995 = 4995 (thousands separator)
+    else t = t.replace(",", ".");                                           // 4,5 = 4.5 (decimal comma)
+    if (t === "") return null;
+    return /^-?(\d+\.?\d*|\.\d+)$/.test(t) ? parseFloat(t) : NaN;
+  });
+  // sparse readings: row index -> pressure (null = not entered / not a number). Blank rows are simply skipped.
+  const pts = raw.map(v => (v === null || Number.isNaN(v) ? null : v));
+  const idx = []; pts.forEach((v, i) => { if (v !== null) idx.push(i); });
+  const first = idx.length ? idx[0] : -1, last = idx.length ? idx[idx.length - 1] : -1;
+  const lb = x => { let lo = 0, hi = idx.length; while (lo < hi) { const m = (lo + hi) >> 1; if (idx[m] < x) lo = m + 1; else hi = m; } return lo; };   // first position with idx >= x
+  const leIdx = x => { const k = lb(Math.floor(x) + 1) - 1; return k >= 0 ? idx[k] : -1; };      // last entered row at or before x
+  const rng = (a, b) => idx.slice(lb(a), lb(b + 1));                                             // entered rows in [a, b]
+  const nearest = x => { const k = lb(x); if (k <= 0) return idx[0]; if (k >= idx.length) return idx[idx.length - 1]; return x - idx[k - 1] <= idx[k] - x ? idx[k - 1] : idx[k]; };
+  const nT = nTest(), n = Math.max(1, Math.round(Wsec / I));
+  const exactW = Math.abs(n * I - Wsec) < 1e-6, exactD = Math.abs(nT * I - durSec) < 1e-6;
+
+  // rate/trend between two entered rows a<b, using the real time between them and any entered readings in between
+  function seg(a, b) {
+    const ps = rng(a, b), k = b - a, mins = k * I / 60;
+    const start = pts[a], end = pts[b], loss = r6(start - end), rate = r6(loss / mins);
+    let sx = 0, sy = 0, sxx = 0, sxy = 0, up = 0;
+    ps.forEach((j, q) => {
+      const x = (j - a) * I / 60, y = pts[j];
+      sx += x; sy += y; sxx += x * x; sxy += x * y;
+      if (q > 0 && y > pts[ps[q - 1]]) up++;
+    });
+    const m = ps.length, slope = (m * sxy - sx * sy) / (m * sxx - sx * sx), e = 1e-9;
+    const trend = loss > e && slope < -e ? "Decreasing" : loss < -e && slope > e ? "Rising" : Math.abs(loss) <= e && Math.abs(slope) <= e ? "Flat" : "Mixed";
+    return {a, b, k, count: m, start, end, loss, mins, rate, slope, up, trend, rateOk: isOk(rate)};
+  }
+  // is the loss rate getting worse? first half vs second half of [a,b]; a rise in pressure counts as zero loss
+  function trendOf(a, b) {
+    const inside = rng(a + 1, b - 1); if (!inside.length) return null;
+    const mid = (a + b) / 2; let mI = inside[0];
+    inside.forEach(i => { if (Math.abs(i - mid) < Math.abs(mI - mid)) mI = i; });
+    const r1 = Math.max(0, r6((pts[a] - pts[mI]) / ((mI - a) * I / 60))), r2 = Math.max(0, r6((pts[mI] - pts[b]) / ((b - mI) * I / 60))), d = r6(r2 - r1);
+    return {r1, r2, label: d < -tol ? "Improving" : d > tol ? "Worsening" : "Steady", good: d <= tol};
+  }
+  // every pass/fail criterion for the period [a, b]
+  function evalWin(a, b) {
+    const sg = seg(a, b), ps = rng(a, b);
+    let lo = Infinity, hi = -Infinity, firstBelow = -1, firstAbove = -1, out = 0;
+    ps.forEach(i => {
+      const v = pts[i]; if (v < lo) lo = v; if (v > hi) hi = v;
+      if (pMin > 0) { const rv = r6(v); if (rv < pMin) { out++; if (firstBelow < 0) firstBelow = i; } else if (rv > pMax) { out++; if (firstAbove < 0) firstAbove = i; } }
+    });
+    const rangeOk = out === 0;
+    let rs = sg;                                                   // loss rate over the last N minutes of the period
+    if (rateMin > 0) { const off = Math.max(1, Math.round(rateMin * 60 / I)), j = leIdx(b - off), jj = j >= a ? j : a; if (jj < b) rs = seg(jj, b); }
+    const tr = trendOf(a, b), lossOk = maxLoss === null || sg.loss <= maxLoss, trendOk = !tr || tr.good;
+    const viol = [];
+    if (!rangeOk) viol.push("PRESSURE RANGE"); if (!rs.rateOk) viol.push("LOSS RATE"); if (!lossOk) viol.push("TOTAL LOSS"); if (S.reqTrend && !trendOk) viol.push("LOSS TREND");
+    return {sg, lo, hi, firstBelow, firstAbove, out, rangeOk, rs, tr, lossOk, trendOk, viol};
+  }
+
+  // ----- choose the period [ws, we] to judge -----
+  let ws = -1, we = -1, complete = false, winMsg = "", bestInfo = null, E = null;
+  if (idx.length >= 2) {
+    if (S.mode === "custom") {
+      const f = numOrNull(S.cFrom), t = numOrNull(S.cTo);
+      we = t === null || Number.isNaN(t) ? last : nearest(t * 60 / I);
+      ws = f === null || Number.isNaN(f) ? first : nearest(f * 60 / I);
+      if (ws >= we) { winMsg = "Custom range: the From time must be earlier than the To time, and both need a reading near them."; ws = we = -1; }
+    } else if (S.mode === "latest") {
+      we = last;                          // latest N minutes, ending at the newest reading
+      const j = leIdx(we - nT);
+      ws = j >= 0 ? j : first;
+    } else {                              // best: try every N-minute period in the data and take the one that satisfies the criteria best
+      let best = null, cnt = 0, passN = 0;
+      for (let q = 0; q < idx.length; q++) {
+        const a = idx[q], k = lb(a + nT); if (k >= idx.length) break;
+        const b = idx[k], e = evalWin(a, b); cnt++; if (!e.viol.length) passN++;
+        const key = [e.viol.length, e.out, Math.max(0, e.sg.loss), -a];       // fewest failed criteria, fewest out-of-range readings, least loss, most recent
+        let better = !best;
+        if (best) for (let z = 0; z < key.length; z++) { if (key[z] !== best.key[z]) { better = key[z] < best.key[z]; break; } }
+        if (better) best = {a, b, e, key};
+      }
+      if (best) { ws = best.a; we = best.b; E = best.e; bestInfo = {total: cnt, pass: passN}; } else { ws = first; we = last; }
+    }
+    if (ws >= 0) complete = we - ws >= nT;
+  }
+
+  let overall = null, rateTrend = null, bleed = null;
+  if (ws >= 0) {
+    if (!E) E = evalWin(ws, we);
+    overall = Object.assign({}, E.sg, {lossOk: E.lossOk, trendOk: E.trendOk, rangeOk: E.rangeOk, rs: E.rs, lo: E.lo, hi: E.hi, firstBelow: E.firstBelow, firstAbove: E.firstAbove, viol: E.viol});
+    overall.pass = E.viol.length === 0;
+    rateTrend = E.tr;
+    const after = idx.filter(i => i > we);                          // has the pressure been bled back to ~0 after this period?
+    if (!after.length) bleed = {none: true};
+    else { let m = Infinity, at = -1; after.forEach(i => { if (pts[i] < m) { m = pts[i]; at = i; } }); bleed = {ok: m <= ambTol, min: m, at}; }
+  }
+
+  // sections inside the window: each closes at the last reading entered by the end of its time slot
+  const sections = [];
+  if (overall) {
+    let anchor = ws;
+    for (let B = ws + n; anchor < we; B += n) {
+      const end = leIdx(Math.min(B, we));
+      if (end > anchor) {
+        const sc = seg(anchor, end);
+        sc.complete = B <= we;
+        const prev = sections[sections.length - 1];
+        sc.drate = prev ? sc.rate - prev.rate : null;
+        sections.push(sc); anchor = end;
+      }
+    }
+  }
+
+  // reading-to-reading loss rates inside the window
+  const steps = [];
+  for (let q = 1; q < idx.length; q++) if (ws >= 0 && idx[q - 1] >= ws && idx[q] <= we)
+    steps.push(r6((pts[idx[q - 1]] - pts[idx[q]]) / ((idx[q] - idx[q - 1]) * I / 60)));
+
+  // rolling tiles: window end vs the nearest entered reading that is at least w minutes older
+  const rolling = TILES.map(w => {
+    const off = Math.round(w * 60 / I);
+    if (off < 1 || Math.abs(off * I - w * 60) > 1e-6) return {w, na: `needs an interval that divides ${w} min`};
+    if (we < 0) return {w, na: "needs 2 readings"};
+    const j = leIdx(we - off);
+    if (j < 0) { const need = off - (we - first); return {w, na: `${need} more reading${need > 1 ? "s" : ""}`}; }
+    return {w, off, s: seg(j, we)};
+  });
+
+  let gaps = 0; if (ws >= 0) gaps = (we - ws + 1) - rng(ws, we).length;
+  return {raw, pts, idx, first, last, nT, n, I, durSec, exactW, exactD, lim, maxLoss, tol, isOk, mode: S.mode, ws, we, complete, winMsg,
+          pMin, pMax, pMaxCustom: pOver !== null, overPct, rateMin, ambTol, bestInfo, bleed, overall, rateTrend, steps, sections, rolling, gaps,
+          evalRange: evalWin, nearest: x => (idx.length ? nearest(x) : -1)};
+}
+
+
+
+const esc = x => String(x).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = x => { let t = String(x).trim(); if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, ""); else t = t.replace(",", "."); return /^-?(\d+\.?\d*|\.\d+)$/.test(t) && t !== "" ? parseFloat(t) : NaN; };
+const nf = x => Number(x).toLocaleString("en-US", {maximumFractionDigits: 3});
+let LASTM = null;
+
+/* ---------- setup (test criteria) ---------- */
+function chips(list, cur, attr) { return `<div class="chips">${list.map(([v, l]) => `<button class="chip${String(cur) === String(v) ? " on" : ""}" data-${attr}="${v}">${l}</button>`).join("")}</div>`; }
+function bandOf() {
+  const mn = +S.pMin > 0 ? +S.pMin : 0; if (!mn) return null;
+  const o = String(S.pMaxOver).trim() !== "" && Number.isFinite(+S.pMaxOver) && +S.pMaxOver > mn ? +S.pMaxOver : null;
+  return {min: mn, max: o !== null ? o : Math.round(mn * (1 + ((+S.overPct) || 0) / 100) * 1e6) / 1e6, custom: o !== null};
+}
+function setupSummary() {
+  const ml = S.maxLossBy[String(S.duration)], hasMl = ml !== undefined && String(ml).trim() !== "";
+  return `<b>${S.duration} min</b> test · ${bandOf() ? `<b>${nf(bandOf().min)}</b> psi minimum (max ${nf(bandOf().max)})` : "no pressure check"} · loss <b>${S.incl ? "≤" : "<"} ${S.limit}</b> psi/min${hasMl ? ` · total loss ≤ <b>${ml}</b> psi` : ""}`;
+}
+function renderSetup() {
+  const el = $("#setup");
+  if (!S.setupOpen) { el.innerHTML = `<h2>Test criteria</h2><div class="sum"><div class="t">${setupSummary()}</div><button class="btn sm" id="setupEdit">Change</button></div>`; return; }
+  const ml = S.maxLossBy[String(S.duration)];
+  el.innerHTML = `<h2>Test criteria</h2>
+    <label class="f">Minimum test pressure (psi)</label>${chips([[4500, "4,500"], [5000, "5,000"], [7500, "7,500"], [8000, "8,000"], [10000, "10,000"]], S.pMin, "p")}
+    <div class="inl" style="margin-top:8px"><input id="pNum" type="number" inputmode="decimal" step="any" min="0" placeholder="other / blank = no check" value="${+S.pMin > 0 ? S.pMin : ""}"><span>psi</span></div>
+    <label class="f">Maximum test pressure <span style="font-weight:500">(optional${bandOf() ? " · now " + nf(bandOf().max) : ""})</span></label>
+    <div class="inl"><input id="pMaxOver" type="number" inputmode="decimal" step="any" min="0" placeholder="blank = minimum + ${S.overPct}%" value="${esc(S.pMaxOver)}"><span>psi</span></div>
+    <label class="f">Test length</label>${chips([[5, "5 min"], [10, "10 min"], [15, "15 min"], [30, "30 min"]], S.duration, "d")}
+    <div class="inl" style="margin-top:8px"><input id="dNum" type="number" inputmode="decimal" step="any" min="1" value="${S.duration}"><span>minutes</span></div>
+    <label class="f">Max loss rate</label>
+    <div class="inl"><input id="limit" type="number" inputmode="decimal" step="any" min="0" value="${S.limit}"><span>psi / min</span></div>
+    <label class="chk"><input type="checkbox" id="incl" ${S.incl ? "checked" : ""}> Exactly equal to the limit still passes</label>
+    <label class="f">Max total loss for a ${S.duration}-min test</label>
+    <div class="inl"><input id="maxLoss" type="number" inputmode="decimal" step="any" min="0" placeholder="none" value="${ml === undefined ? "" : esc(ml)}"><span>psi</span></div>
+    <details style="margin-top:6px"><summary>More options</summary>
+      <label class="f">Test pressure must not exceed (% above the minimum)</label><div class="inl"><input id="overPct" type="number" inputmode="decimal" step="any" min="0" value="${S.overPct}"><span>%</span></div>
+      <label class="f">Loss rate measured over the last</label><div class="inl"><input id="rateMin" type="number" inputmode="decimal" step="any" min="0" value="${S.rateMin}"><span>min (0 = whole test)</span></div>
+      <label class="chk"><input type="checkbox" id="reqTrend" ${S.reqTrend ? "checked" : ""}> Loss rate must not get worse</label>
+      <label class="f">Trend tolerance</label><div class="inl"><input id="tol" type="number" inputmode="decimal" step="any" min="0" value="${S.tol}"><span>psi / min</span></div>
+      <label class="f">Which minutes are judged</label>${chips([["best", `Best ${S.duration} min`], ["latest", `Latest ${S.duration} min`]], S.mode, "m")}
+      <small class="h">Best looks at every ${S.duration}-minute stretch you entered and judges the best one. Latest judges only the most recent ${S.duration} minutes.</small>
+    </details>
+    <div class="btns"><button class="btn pri" id="setupDone">Done</button></div>`;
+}
+$("#setup").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "setupEdit") { S.setupOpen = true; render(); return; }
+  if (b.id === "setupDone") { S.setupOpen = false; render(); window.scrollTo({top: 0, behavior: "smooth"}); return; }
+  if (b.dataset.p) { S.pMin = +b.dataset.p; render(); }
+  if (b.dataset.d) { S.duration = +b.dataset.d; render(); }
+  if (b.dataset.m) { S.mode = b.dataset.m; render(); }
+});
+$("#setup").addEventListener("input", e => {
+  const t = e.target, v = t.value, f = parseFloat(v);
+  if (t.id === "pNum") S.pMin = f > 0 ? f : 0;
+  else if (t.id === "pMaxOver") S.pMaxOver = v;
+  else if (t.id === "limit") S.limit = v === "" ? 5 : f;
+  else if (t.id === "maxLoss") S.maxLossBy[String(S.duration)] = v;
+  else if (t.id === "overPct") S.overPct = v === "" ? 5 : f;
+  else if (t.id === "rateMin") S.rateMin = v === "" ? 5 : f;
+  else if (t.id === "tol") S.tol = v === "" ? 0.25 : f;
+  else return;
+  render(t.id);                                    // keep the field being typed in
+});
+$("#setup").addEventListener("change", e => {
+  if (e.target.id === "dNum") { const f = parseFloat(e.target.value); if (f > 0) S.duration = f; }
+  else if (e.target.id === "incl") S.incl = e.target.checked;
+  else if (e.target.id === "reqTrend") S.reqTrend = e.target.checked;
+  else return;
+  render();
+});
+
+/* ---------- entering readings ---------- */
+const val = $("#val");
+function msg(t) { const m = $("#entryMsg"); m.textContent = t || ""; m.hidden = !t; }
+function addReading() {
+  const x = num(val.value);
+  if (Number.isNaN(x)) { msg("Type the pressure as a number, like 5012 or 5012.5"); val.focus(); return; }
+  if (S.rows.length >= MAXROWS) { msg("That is the most readings the page can hold."); return; }
+  msg(""); S.rows.push(String(x)); val.value = ""; render(); val.focus();
+}
+$("#add").onclick = addReading;
+val.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addReading(); } });
+$("#skip").onclick = () => { if (!S.rows.length) { msg("Enter the first reading before skipping."); return; } S.rows.push(""); msg(""); render(); };
+$("#undoLast").onclick = () => { if (!S.rows.length) return; const was = S.rows.pop(); while (S.rows.length && S.rows[S.rows.length - 1] === "") S.rows.pop(); msg(""); render(); toast(was === "" ? "Removed the skipped minute" : `Removed ${was}`); };
+$("#newTest").onclick = () => {
+  if (S.rows.length && !confirm("Start a new test?\n\nThis clears the readings. Your test criteria are kept.")) return;
+  S.rows = []; msg(""); S.setupOpen = false; render(); window.scrollTo({top: 0}); val.focus();
+};
+// tap a reading to fix it
+$("#list").addEventListener("click", e => {
+  const r = e.target.closest(".rw[data-i]"); if (!r) return;
+  const i = +r.dataset.i, cur = S.rows[i];
+  $("#sheetBox").innerHTML = `<h3>Minute ${i}</h3><input id="shVal" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" placeholder="(skipped)">
+    <div class="btns"><button class="btn pri" id="shSave">Save</button><button class="btn" id="shClear">${i === S.rows.length - 1 ? "Delete" : "Skip this minute"}</button><button class="btn" id="shCancel">Cancel</button></div>`;
+  $("#sheet").hidden = false; setTimeout(() => { $("#shVal").focus(); $("#shVal").select(); }, 50);
+  const close = () => { $("#sheet").hidden = true; };
+  $("#shCancel").onclick = close;
+  $("#shSave").onclick = () => { const x = num($("#shVal").value); if (Number.isNaN(x)) { $("#shVal").style.borderColor = "var(--bad)"; return; } S.rows[i] = String(x); close(); render(); };
+  $("#shClear").onclick = () => { if (i === S.rows.length - 1) { S.rows.pop(); while (S.rows.length && S.rows[S.rows.length - 1] === "") S.rows.pop(); } else S.rows[i] = ""; close(); render(); };
+  $("#shVal").addEventListener("keydown", ev => { if (ev.key === "Enter") $("#shSave").click(); });
+});
+$("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") $("#sheet").hidden = true; });
+
+/* ---------- results ---------- */
+// While the pressure is still being built up, or has been at test pressure for less than the test length,
+// the test is "in progress", not failed. Judge only the minutes since pressure reached the band.
+function analyze() {
+  const M = compute();
+  if (!M.overall || !(M.pMin > 0) || M.last < 0 || (M.complete && M.overall.pass)) return M;
+  const v = r6(M.pts[M.last]);
+  if (v >= M.pMin && v <= M.pMax) {
+    let st = M.last;
+    for (let q = M.idx.length - 1; q >= 0; q--) { const x = r6(M.pts[M.idx[q]]); if (x >= M.pMin && x <= M.pMax) st = M.idx[q]; else break; }
+    const minutes = M.last - st;
+    if (minutes >= M.nT) return M;                       // a full test length at pressure exists: judge the best period as usual
+    if (st < M.last) {
+      const save = [S.mode, S.cFrom, S.cTo];
+      S.mode = "custom"; S.cFrom = String(st); S.cTo = String(M.last);
+      const M2 = compute(); [S.mode, S.cFrom, S.cTo] = save;
+      if (M2.overall) { M2.live = {kind: "hold", minutes, start: st}; return M2; }
+    }
+    M.live = {kind: "start", start: st}; return M;
+  }
+  if (v < M.pMin) {
+    const q = M.idx.length - 2, prev = q >= 0 ? M.pts[M.idx[q]] : undefined;
+    if (prev === undefined || M.pts[M.last] >= prev) { M.live = {kind: "build"}; return M; }
+    return M;                                            // pressure is falling below the minimum: a real failure
+  }
+  M.live = {kind: "high"}; return M;                     // above the maximum: too high, bleed down
+}
+function verdict(M) {
+  const O = M.overall, U = "PSI";
+  if (!O) return {cls: "v-wait", txt: "WAITING", sub: "ENTER 2 READINGS", reasons: []};
+  const L = M.live;
+  if (L && L.kind === "build") return {cls: "v-wait v-prov", txt: "BUILDING", sub: `${nf(M.pts[M.last])} OF ${nf(M.pMin)} PSI`, reasons: []};
+  if (L && L.kind === "high") return {cls: "v-fail v-prov", txt: "TOO HIGH", sub: `ABOVE ${nf(M.pMax)} PSI`, reasons: ["PRESSURE RANGE"]};
+  if (L && L.kind === "start") return {cls: "v-wait v-prov", txt: "KEEP GOING", sub: `AT TEST PRESSURE · 0:00 OF ${S.duration}:00`, reasons: []};
+  const reasons = O.viol;
+  if (M.complete) return {cls: O.pass ? "v-pass" : "v-fail", txt: O.pass ? "PASS" : "FAIL", sub: O.pass ? `${S.duration} MIN MET` : reasons.join(", "), reasons};
+  const rtxt = `${M.lim} ${U}/MIN`;
+  const txt = !O.rangeOk ? (O.firstBelow >= 0 ? `BELOW ${nf(M.pMin)}` : `ABOVE ${nf(M.pMax)}`) : !O.rs.rateOk ? (S.incl ? `ABOVE ${rtxt}` : `${rtxt}+`) : !O.lossOk ? `OVER ${M.maxLoss} TOTAL` : (S.reqTrend && !O.trendOk) ? "GETTING WORSE" : (S.incl ? `≤ ${rtxt}` : `UNDER ${rtxt}`);
+  return {cls: (reasons.length ? "v-fail" : "v-pass") + " v-prov", txt: "KEEP GOING", sub: txt, reasons};
+}
+function renderStrip(M) {
+  const V = verdict(M), O = M.overall;
+  const have = M.idx.length ? `minute ${M.last}` : "no readings";
+  let line = `<b>—</b>no readings yet`;
+  const L = M.live;
+  if (O && L && (L.kind === "build" || L.kind === "high" || L.kind === "start")) line = `<b>${nf(M.pts[M.last])} psi</b>${L.kind === "build" ? "pressure still building" : L.kind === "high" ? "above the maximum test pressure" : "reached test pressure at minute " + L.start}`;
+  else if (O) line = `<b>${fr(O.rs.rate)} psi/min</b>${M.rateMin > 0 ? `last ${M.rateMin} min` : "whole test"} · ${M.complete ? "period" : "so far"} ${mmss((M.we - M.ws) * 60)} of ${S.duration}:00`;
+  if (O && L && L.kind === "hold") line = line.replace(/·.*$/, `· ${mmss(L.minutes * 60)} of ${S.duration}:00 at test pressure`);
+  $("#strip").innerHTML = `<div class="vbox ${V.cls}">${V.txt}<small>${V.sub}</small></div><div class="vtext">${line}</div>`;
+}
+function renderList(M) {
+  if (!S.rows.length) { $("#list").innerHTML = `<div class="empty">No readings yet. Type the first pressure above and tap Add.</div>`; return; }
+  let prevV = null, prevI = -1, html = [];
+  const info = [];
+  for (let i = 0; i < S.rows.length; i++) {
+    const v = M.pts[i];
+    if (v === null) { info.push({i, blank: true}); continue; }
+    let d = null, l = null;
+    if (prevI >= 0) { d = v - prevV; l = r6(-d / (i - prevI)); }
+    info.push({i, v, d, l, gap: prevI >= 0 && i - prevI > 1});
+    prevV = v; prevI = i;
+  }
+  html.push(`<div class="rw hd"><span>Min</span><span>Pressure</span><span>Change</span><span>Loss/min</span></div>`);
+  for (let k = info.length - 1; k >= 0; k--) {
+    const r = info[k], inW = M.ws >= 0 && r.i >= M.ws && r.i <= M.we;
+    if (r.blank) { html.push(`<div class="rw${inW ? " inwin" : ""}" data-i="${r.i}"><span class="m">${r.i}</span><span class="v" style="color:var(--muted)">skipped</span><span></span><span></span></div>`); continue; }
+    html.push(`<div class="rw${inW ? " inwin" : ""}" data-i="${r.i}"><span class="m">${r.i}</span><span class="v">${esc(nf(r.v))}</span><span class="d">${r.d === null ? "" : sgd(r.d)}</span><span class="l ${r.l === null ? "" : M.isOk(r.l) ? "good" : "bad"}">${r.l === null ? "" : fr(r.l) + (r.gap ? "*" : "")}</span></div>`);
+  }
+  $("#list").innerHTML = html.join("");
+}
+function renderResult(M) {
+  const O = M.overall, el = $("#result"), u = "psi";
+  if (!O) { el.innerHTML = `<h2>Result</h2><div class="empty">Enter at least two 1-minute readings to see the trend and the pass / fail result.</div>`; return; }
+  const clk = i => mmss(i * 60);
+  const checks = [];
+  if (M.pMin > 0) {
+    const bits = [];
+    if (O.firstBelow >= 0) bits.push(`dropped below ${nf(M.pMin)} at minute ${O.firstBelow} (low ${nf(O.lo)})`);
+    if (O.firstAbove >= 0) bits.push(`went above ${nf(M.pMax)} at minute ${O.firstAbove} (high ${nf(O.hi)})`);
+    checks.push(`<li class="${O.rangeOk ? "ok" : "no"}">${O.rangeOk ? `Pressure stayed between ${nf(M.pMin)} and ${nf(M.pMax)} (${nf(O.lo)} to ${nf(O.hi)})` : `Pressure must stay between ${nf(M.pMin)} and ${nf(M.pMax)}: it ${bits.join(" and ")}`}</li>`);
+  }
+  const rl = M.rateMin > 0 ? `last ${M.rateMin} min` : "whole test";
+  checks.push(`<li class="${O.rs.rateOk ? "ok" : "no"}">Loss rate, ${rl}: <b>${fr(O.rs.rate)}</b> ${O.rs.rateOk ? (S.incl ? "≤" : "&lt;") : (S.incl ? "&gt;" : "≥")} ${M.lim} psi/min</li>`);
+  if (M.maxLoss !== null) checks.push(`<li class="${O.lossOk ? "ok" : "no"}">Total loss <b>${fp(O.loss)}</b> ${O.lossOk ? "≤" : "&gt;"} ${M.maxLoss} psi</li>`);
+  const T = M.rateTrend;
+  checks.push(T ? `<li class="${T.good ? "ok" : (S.reqTrend ? "no" : "")}">Loss trend: <b>${T.label.toLowerCase()}</b> (${fr(T.r1)} → ${fr(T.r2)} psi/min)</li>` : `<li>Loss trend: needs a reading between the start and end</li>`);
+  if (O.trend === "Rising") checks.push(`<li class="ok">Pressure rose (a rise is not a failure)</li>`);
+  const B = M.bleed;
+  if (B && !B.none) checks.push(`<li class="${B.ok ? "ok" : ""}">${B.ok ? `Bled down to 0 afterwards (${fp(B.min)} psi)` : `Not bled down to 0 yet (lowest after the test: ${fp(B.min)} psi)`}</li>`);
+  else if (B) checks.push(`<li>After the test the pressure must be bled back down to 0.</li>`);
+  if (M.bestInfo) checks.push(`<li>Best of ${M.bestInfo.total} possible ${S.duration}-minute stretches · <b>${M.bestInfo.pass}</b> meet every criterion</li>`);
+  const f = (k, v, sub) => `<div class="fact"><div class="k">${k}</div><div class="v">${v}${sub ? ` <small>${sub}</small>` : ""}</div></div>`;
+  const steps = M.steps.length > 40 ? M.steps.slice(-40) : M.steps;
+  const L = M.live;
+  const head = L && L.kind === "hold" ? `Result so far · at test pressure since minute ${L.start}` : L && (L.kind === "build" || L.kind === "start" || L.kind === "high") ? "Result · test still in progress" : `Result · ${M.mode === "best" ? "best" : "latest"} period, minutes ${M.ws}–${M.we}`;
+  el.innerHTML = `<h2>${head}</h2>
+    ${L && L.kind === "build" ? `<p class="note" style="margin:0 0 10px">Pressure is still building toward ${nf(M.pMin)} psi. The test is not judged until the pressure is in the test band (${nf(M.pMin)}–${nf(M.pMax)} psi). The numbers below are for the readings so far.</p>` : ""}
+    ${L && L.kind === "start" ? `<p class="note" style="margin:0 0 10px">Test pressure reached at minute ${L.start}. Keep entering 1-minute readings. The ${S.duration}-minute test needs ${S.duration} minutes at pressure.</p>` : ""}
+    ${L && L.kind === "high" ? `<p class="note" style="margin:0 0 10px">The pressure is above ${nf(M.pMax)} psi, more than ${M.overPct}% over the minimum. Bleed it down into the band.</p>` : ""}
+    <ul class="checks">${checks.join("")}</ul>
+    <div class="facts">${f("Period", mmss((M.we - M.ws) * 60), `of ${S.duration}:00`)}${f("Total loss", (O.loss < 0 ? "+" : "") + fp(Math.abs(O.loss)), "psi" + (O.loss < 0 ? " (rise)" : ""))}${f("Start", nf(O.start), u)}${f("End", nf(O.end), u)}${f("Lowest", nf(O.lo), u)}${f("Highest", nf(O.hi), u)}${f("Rate, whole period", fr(O.rate), "psi/min")}${f("Rate, " + rl, fr(O.rs.rate), "psi/min")}</div>
+    ${steps.length ? `<div class="chain"><span class="s">Loss per minute:</span> ${M.steps.length > 40 ? "… → " : ""}${steps.map(r => `<span class="${M.isOk(r) ? "good" : "bad"}">${fr(r)}</span>`).join(" → ")}</div>` : ""}
+    <svg class="chart" id="chart" viewBox="0 0 360 210" role="img" aria-label="Pressure by minute"></svg><div id="chartRead"></div>`;
+  drawChart(M);
+}
+let CG = null;
+function drawChart(M) {
+  const svg = $("#chart"); if (!svg) return;
+  const L = M.idx, vals = L.map(i => M.pts[i]);
+  const W = 360, H = 210, Lm = 46, Rm = 8, Tm = 10, Bm = 24, pw = W - Lm - Rm, ph = H - Tm - Bm, xmax = Math.max(M.last, 1);
+  let y0 = Math.min(...vals), y1 = Math.max(...vals);
+  if (M.pMin > 0 && y0 >= M.pMin * 0.7) { y0 = Math.min(y0, M.pMin); y1 = Math.max(y1, M.pMax); }
+  const pad = (y1 - y0) * 0.12 || 1; y0 -= pad; y1 += pad;
+  const X = m => Lm + m / xmax * pw, Y = p => Tm + (1 - (p - y0) / (y1 - y0)) * ph;
+  CG = {W, Lm, pw, xmax, X, Y};
+  let g = "";
+  for (let i = 0; i <= 3; i++) { const p = y0 + (y1 - y0) * i / 3, y = Y(p); g += `<line class="gl" x1="${Lm}" x2="${W - Rm}" y1="${y}" y2="${y}"/><text x="${Lm - 5}" y="${y + 4}" text-anchor="end">${Math.round(p)}</text>`; }
+  for (let i = 0; i <= 4; i++) { const m = xmax * i / 4; g += `<text x="${X(m)}" y="${H - 6}" text-anchor="middle">${Math.round(m)}</text>`; }
+  let band = "";
+  if (M.pMin > 0 && y0 <= M.pMax && y1 >= M.pMin) [M.pMin, M.pMax].forEach(v => { if (v >= y0 && v <= y1) band += `<line class="band" x1="${Lm}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}"/>`; });
+  const win = M.ws >= 0 ? `<rect class="win" x="${X(M.ws)}" y="${Tm}" width="${Math.max(2, X(M.we) - X(M.ws))}" height="${ph}"/>` : "";
+  const path = vals.map((p, q) => `${q ? "L" : "M"}${X(L[q]).toFixed(1)},${Y(p).toFixed(1)}`).join("");
+  const dots = vals.length <= 80 ? vals.map((p, q) => `<circle class="dot" r="3" cx="${X(L[q])}" cy="${Y(p)}"/>`).join("") : "";
+  svg.innerHTML = `${g}${win}${band}<path class="ln" d="${path}"/>${dots}<circle id="cm" r="6" fill="var(--text)" stroke="var(--accent)" stroke-width="3" cx="-20" cy="-20"/><text x="${W - Rm}" y="9" text-anchor="end">minutes</text>`;
+}
+function chartTouch(e) {
+  const svg = $("#chart"), M = LASTM; if (!svg || !CG || !M || !M.idx.length) return;
+  const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * CG.W;
+  const row = M.nearest(Math.max(0, Math.min(CG.xmax, (x - CG.Lm) / CG.pw * CG.xmax))), v = M.pts[row];
+  const c = $("#cm"); c.setAttribute("cx", CG.X(row)); c.setAttribute("cy", CG.Y(v));
+  $("#chartRead").textContent = `Minute ${row} · ${nf(v)} psi`;
+}
+$("#result").addEventListener("pointerdown", e => { if (e.target.closest("#chart")) chartTouch(e); });
+$("#result").addEventListener("pointermove", e => { if (e.target.closest("#chart") && e.buttons) chartTouch(e); });
+
+function summaryText(M) {
+  const O = M.overall, out = [`JJ's Pressure Test Analyzer (mobile REV ${MREV})${S.test ? " · " + S.test : ""} · ${new Date().toLocaleString()}`];
+  out.push(`${S.duration} min test · ${M.pMin > 0 ? `pressure ${nf(M.pMin)}-${nf(M.pMax)} psi · ` : ""}loss ${S.incl ? "<=" : "<"} ${M.lim} psi/min over ${M.rateMin > 0 ? "last " + M.rateMin + " min" : "whole test"}${M.maxLoss !== null ? ` · total loss <= ${M.maxLoss} psi` : ""}${S.reqTrend ? " · loss must not get worse" : ""}`);
+  if (!O) { out.push("Not enough readings yet."); return out.join("\n"); }
+  const V = verdict(M);
+  out.push(`${M.complete ? "RESULT: " + V.txt + (O.pass ? "" : " (" + O.viol.join(", ") + ")") : "NOT FINAL: " + V.sub} · ${M.mode === "best" ? "best" : "latest"} ${S.duration}-min period, minutes ${M.ws}-${M.we}`);
+  out.push(`Start ${nf(O.start)}, end ${nf(O.end)}, low ${nf(O.lo)}, high ${nf(O.hi)} psi · total loss ${fp(O.loss)} psi · ${fr(O.rate)} psi/min whole, ${fr(O.rs.rate)} psi/min last ${M.rateMin || "all"} min`);
+  if (M.rateTrend) out.push(`Loss trend ${M.rateTrend.label.toLowerCase()} (${fr(M.rateTrend.r1)} -> ${fr(M.rateTrend.r2)} psi/min)`);
+  if (M.steps.length) out.push("Loss per minute: " + M.steps.map(fr).join(" -> "));
+  out.push("Readings (minute=psi): " + M.idx.map(i => i + "=" + M.pts[i]).join("  "));
+  return out.join("\n");
+}
+$("#share").onclick = async () => {
+  const t = summaryText(LASTM);
+  try { if (navigator.share) { await navigator.share({title: "Pressure test result", text: t}); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  try { await navigator.clipboard.writeText(t); toast("Result copied. Paste it into a message."); }
+  catch (e) { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); toast("Result copied. Paste it into a message."); } catch (_) { toast("Could not copy"); } a.remove(); }
+};
+
+/* ---------- render ---------- */
+function render(keep) {
+  const M = analyze(); LASTM = M; save();
+  renderStrip(M);
+  if (keep === undefined || !keep || $("#setup").querySelector("#" + keep) === null || document.activeElement !== $("#" + keep)) renderSetup();
+  $("#nextMin").textContent = "minute " + S.rows.length;
+  renderList(M); renderResult(M);
+}
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
+render();
+</script>
+</body>
+</html>

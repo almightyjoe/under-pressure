@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JJ's Pressure Test Analyzer REV 1.6</title>
+<style>
+:root{
+  --bg:#0e1319;--panel:#161d26;--panel2:#1c2531;--line:#263344;--text:#e6edf5;--muted:#8a98aa;
+  --accent:#3da9fc;--good:#2ecc71;--bad:#ff5c5c;--warn:#f5a524;--shade:rgba(61,169,252,.09);
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  color-scheme:dark light;
+}
+@media (prefers-color-scheme:light){:root{
+  --bg:#f2f5f9;--panel:#fff;--panel2:#f6f8fb;--line:#d6dde8;--text:#121b26;--muted:#5a6a7d;
+  --accent:#0b6fc2;--good:#1a9b4b;--bad:#d4372f;--warn:#b86e00;--shade:rgba(11,111,194,.09);
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:650;font-size:18px}
+.brand svg{width:26px;height:26px}
+.rev{font:700 11px/1 system-ui,sans-serif;letter-spacing:.8px;color:var(--accent);border:1px solid var(--accent);padding:4px 7px;border-radius:6px}
+nav{display:flex;gap:4px;margin-left:auto;align-items:center;flex-wrap:wrap}
+nav button.tabbtn{background:none;border:0;color:var(--muted);font:inherit;font-weight:550;padding:8px 14px;border-radius:8px;cursor:pointer}
+nav button.tabbtn:hover{color:var(--text)}
+nav button.tabbtn[aria-selected=true]{background:var(--panel2);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+main{max-width:1320px;margin:0 auto;padding:18px 24px 48px}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card h2{margin:0 0 12px;font-size:12px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);font-weight:650}
+.bar{display:flex;flex-wrap:wrap;gap:16px 26px;align-items:end;margin-bottom:16px}
+.ctl label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:550}
+.grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chip{background:var(--panel2);border:1px solid var(--line);color:var(--text);font:inherit;font-size:13px;padding:6px 11px;border-radius:8px;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+input[type=text],input[type=number]{background:var(--panel2);border:1px solid var(--line);color:var(--text);font:inherit;padding:7px 10px;border-radius:8px;outline:none}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.num{width:76px;font-family:var(--mono)}
+.sfx{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:minmax(420px,500px) 1fr;gap:16px;align-items:start}
+@media(max-width:940px){.grid{grid-template-columns:1fr}header{padding:12px 16px}main{padding:16px}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.rowhead,.row{display:grid;grid-template-columns:30px 64px 1fr 68px 60px 60px;gap:6px;align-items:center}
+.rowhead{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:0 0 6px}
+.rowhead span:nth-child(n+4){text-align:right}
+#rows{max-height:calc(100vh - 260px);min-height:300px;overflow-y:auto;padding-right:4px}
+.row{padding:3px 4px;border-radius:8px}
+.row.inwin{background:var(--shade)}
+.row .idx{color:var(--muted);font-family:var(--mono);font-size:13px}
+.row .tm{font-family:var(--mono);font-size:13px;color:var(--muted);cursor:pointer;line-height:1.1}
+.row .tm:hover{color:var(--accent)}
+.row .tm b{display:block;font-size:9.5px;letter-spacing:.5px;color:var(--accent)}
+.row input{width:100%;font-family:var(--mono);font-size:16px;font-weight:600;padding:7px 6px}
+.row input.invalid{border-color:var(--bad)}
+.row.ws input,.row.we input{border-color:var(--accent)}
+.row .dl,.row .rt,.row .av{font-family:var(--mono);font-size:12.5px;text-align:right;white-space:nowrap;overflow:hidden}
+.bad{color:var(--bad)}.good{color:var(--good)}.warnc{color:var(--warn)}
+.rt.bad,.av.bad{font-weight:700}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);font:inherit;font-size:13px;padding:7px 12px;border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.hero{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.verdict{font-size:24px;font-weight:750;letter-spacing:.5px;padding:10px 18px;border-radius:10px;border:2px solid;min-width:170px;text-align:center;line-height:1.15}
+.verdict small{display:block;font-size:11px;font-weight:600;letter-spacing:.8px;opacity:.85;margin-top:3px}
+.v-pass{color:var(--good);border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.v-fail{color:var(--bad);border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.v-wait{color:var(--muted);border-color:var(--line);background:var(--panel2)}
+.v-prov{border-style:dashed}
+.prog{flex:1;min-width:220px}
+.prog .txt{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:6px;font-family:var(--mono)}
+.track{height:10px;background:var(--panel2);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.tile{background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:10px 12px}
+.tile.tok{border-left-color:var(--good)}.tile.tbad{border-left-color:var(--bad)}
+.tile .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.tile .v{font-family:var(--mono);font-size:25px;font-weight:700;line-height:1.2}
+.tile.tok .v{color:var(--good)}.tile.tbad .v{color:var(--bad)}
+.tile .v.dim{color:var(--muted)}
+.tile .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.chain{margin-top:14px;font-family:var(--mono);font-size:15px;line-height:1.9}.chain .sfx{font-family:system-ui,sans-serif;margin-right:6px}
+.checks{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:5px;font-size:14px}
+.checks li::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:9px;background:var(--muted)}
+.checks li.ok::before{background:var(--good)}.checks li.no::before{background:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;padding:0 10px 8px 0;font-weight:600;white-space:nowrap;position:sticky;top:0;background:var(--panel)}
+td{padding:9px 10px 9px 0;border-top:1px solid var(--line);font-family:var(--mono);white-space:nowrap}
+td.t{font-family:inherit}
+tr.total td{border-top:2px solid var(--line);font-weight:700;background:var(--panel2)}
+.tablewrap{overflow:auto;max-height:440px}
+.pill{display:inline-block;font:700 11px/1 system-ui,sans-serif;letter-spacing:.7px;padding:5px 9px;border-radius:99px;border:1px solid}
+.pill.pass{color:var(--good);border-color:var(--good)}.pill.fail{color:var(--bad);border-color:var(--bad)}
+.pill.live{color:var(--warn);border-color:var(--warn)}
+.note{color:var(--warn);font-size:13px;margin:0}
+.notes{display:grid;gap:6px}
+.empty{color:var(--muted);padding:22px 0;text-align:center}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1000px}
+.settings small{display:block;color:var(--muted);margin-top:5px;font-size:12px}
+.chk{display:flex;gap:8px;align-items:center;color:var(--text);font-size:14px}
+.mlrow{display:grid;grid-template-columns:110px 90px 1fr;gap:8px;align-items:center;margin-bottom:8px}
+.mlrow.cur span:first-child{font-weight:700}
+svg.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:12px system-ui,sans-serif}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+.chart .dot{fill:var(--accent);stroke:var(--panel);stroke-width:1.5}
+.chart .lim{stroke:var(--warn);stroke-width:1.8;stroke-dasharray:6 5;fill:none}
+.chart .band{stroke:var(--good);stroke-width:1.4;stroke-dasharray:8 4;fill:none}
+.chart .bd{stroke:var(--muted);stroke-dasharray:2 4;stroke-width:1}
+.chart .endl{stroke:var(--accent);stroke-width:1.5}
+#hvLine{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--muted);display:none;pointer-events:none}
+#hvDot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border:2px solid var(--text);border-radius:50%;background:var(--accent);display:none;pointer-events:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+#hvTip{position:absolute;display:none;pointer-events:none;background:var(--panel2);border:1px solid var(--accent);border-radius:8px;padding:7px 10px;font:600 13px var(--mono);white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.35);z-index:5}
+#hvTip small{display:block;font:400 11.5px system-ui,sans-serif;color:var(--muted);margin-top:2px}
+.curline{font-family:var(--mono);font-size:14px;margin:10px 0 0;min-height:22px;color:var(--text)}
+.curline span{color:var(--muted);font-family:system-ui,sans-serif;font-size:13px}
+.selpanel{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+.selpanel .shead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.selpanel .stitle{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:650}
+.selpanel .live{color:var(--accent)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.fact{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 11px}
+.fact .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.fact .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px}
+.fact .v small{font:400 11px system-ui,sans-serif;color:var(--muted)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:8px}
+.legend i{display:inline-block;width:20px;height:0;border-top:3px solid var(--accent);vertical-align:middle;margin-right:6px}
+.legend i.w{border-top:2px dashed var(--warn)}
+.help{max-width:820px}.help h3{margin:20px 0 6px}.help code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:5px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line);padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#modal{position:fixed;inset:0;background:rgba(5,8,12,.72);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;overflow:auto;z-index:50}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;width:min(860px,100%);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.mbox h2{margin:0 0 4px;font-size:18px;color:var(--text);text-transform:none;letter-spacing:0}
+.mbox textarea{width:100%;height:240px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:13px var(--mono);resize:vertical}
+.mbox select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;max-width:100%}
+.impgrid{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0}
+.impgrid label{font-size:12px;color:var(--muted);font-weight:550;display:block}
+.impgrid select{display:block;margin-top:5px;min-width:200px}
+.impinfo{font-size:14px;margin:6px 0 10px;display:grid;gap:4px}
+.impinfo .w{color:var(--warn)}
+.prevtab{overflow:auto;max-height:190px;border:1px solid var(--line);border-radius:8px}
+.prevtab table{font-size:12.5px}
+.prevtab td,.prevtab th{padding:5px 12px 5px 8px;border-top:1px solid var(--line)}
+.prevtab th{position:static;background:var(--panel2);border-top:0}
+.prevtab .sel{background:var(--shade);font-weight:700;color:var(--accent)}
+.spark{width:100%;height:70px;display:block;margin:6px 0 10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+.mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:650}
+#dropOv{position:fixed;inset:0;z-index:60;background:rgba(14,19,25,.82);display:flex;align-items:center;justify-content:center;pointer-events:none}
+#dropOv div{border:3px dashed var(--accent);border-radius:20px;padding:50px 70px;font-size:22px;font-weight:650;color:var(--accent);text-align:center;background:var(--panel)}
+#dropOv small{display:block;font-size:14px;font-weight:400;color:var(--muted);margin-top:8px}
+.impmode{display:grid;gap:7px;margin:12px 0 4px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:14px}
+.impmode label{display:flex;gap:8px;align-items:flex-start;color:var(--text);font-size:14px;margin:0}
+.impmode input{margin-top:4px}
+.hint{font-size:12px;color:var(--muted);margin:-6px 0 10px}
+#chartWrap{position:relative;cursor:crosshair;user-select:none;touch-action:none}
+#selBox{position:absolute;top:0;bottom:0;display:none;background:color-mix(in srgb,var(--accent) 22%,transparent);border-left:2px solid var(--accent);border-right:2px solid var(--accent);pointer-events:none}
+@media print{nav,.tools,.bar{display:none}body{background:#fff;color:#000}.tab{display:block!important}#tab-settings,#tab-help{display:none!important}.grid{grid-template-columns:1fr}#rows{max-height:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v16h18"/><path d="M7 8l4 3 3 4 5 2"/></svg>
+    JJ's Pressure Test Analyzer <span class="rev">REV 1.6</span>
+  </div>
+  <nav role="tablist">
+    <button class="tabbtn" role="tab" data-tab="live" aria-selected="true">Live Test</button>
+    <button class="tabbtn" role="tab" data-tab="chart" aria-selected="false">Chart</button>
+    <button class="tabbtn" role="tab" data-tab="settings" aria-selected="false">Settings</button>
+    <button class="tabbtn" role="tab" data-tab="help" aria-selected="false">Help</button>
+    <button class="btn pri" id="newTest" title="Clear the readings and start a fresh test (settings are kept)">＋ New test</button>
+    <button class="btn" id="openBtn" title="Open a CSV / text file of readings (or just drag it onto the page)">📂 Open file</button>
+    <button class="btn" id="dl" title="Save this app as a single file you can keep and open offline">⬇ Download app</button>
+  </nav>
+</header>
+
+<main>
+<section class="tab on" id="tab-live">
+  <div class="bar">
+    <div class="ctl"><label for="test">Test / well name</label><input type="text" id="test" placeholder="optional" style="width:170px"></div>
+    <div class="ctl"><label>Test length</label>
+      <div class="grp"><span id="dChips" class="grp"></span><input class="num" type="number" id="dNum" min="1" step="1" aria-label="Test minutes"><span class="sfx">min</span></div></div>
+    <div class="ctl"><label>Reading interval</label>
+      <div class="grp"><span id="ivChips" class="grp"></span><input class="num" type="number" id="ivNum" min="1" step="1" aria-label="Interval seconds"><span class="sfx">sec</span></div></div>
+    <div class="ctl"><label>Section length</label>
+      <div class="grp"><span id="wChips" class="grp"></span><input class="num" type="number" id="wNum" min="0.5" step="0.5" aria-label="Section minutes"><span class="sfx">min</span></div></div>
+    <div class="ctl"><label>Min test pressure</label>
+      <div class="grp"><span id="pChips" class="grp"></span><input class="num" type="number" id="pNum" min="0" step="any" placeholder="off" aria-label="Minimum test pressure" style="width:84px"><span class="sfx"><span class="u">psi</span></span></div></div>
+    <div class="ctl"><label>Judge</label>
+      <div class="grp"><span id="mChips" class="grp"></span>
+        <span id="cRange" class="grp" hidden><span class="sfx">from</span><input class="num" type="number" id="cFrom" min="0" step="any" placeholder="start" aria-label="From minute"><span class="sfx">to</span><input class="num" type="number" id="cTo" min="0" step="any" placeholder="latest" aria-label="To minute"><span class="sfx">min</span></span></div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Readings (<span class="u">psi</span>)</h2>
+      <div class="hint">Type readings, or drop a CSV file anywhere on this page · <a href="#" id="pasteLink" style="color:var(--accent)">paste data</a></div>
+      <div class="rowhead"><span>#</span><span title="Click a time to start the custom range there; Shift+click to end it there">Time</span><span>Pressure</span><span>Δ</span><span>Last/min</span><span title="Average loss per minute since the start of the evaluated window">Avg/min</span></div>
+      <div id="rows"></div>
+      <div class="tools">
+        <button class="btn" id="add5">+ 15 rows</button>
+        <button class="btn" id="paste">Paste data</button>
+        <button class="btn" id="undo" hidden title="Put the readings back the way they were before the last file load or New test">↶ Undo</button>
+        <button class="btn" id="csv">Export CSV</button>
+        <button class="btn" id="copy">Copy summary</button>
+        <button class="btn" id="print">Print</button>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card" id="status"></div>
+      <div class="card"><h2>Sections in the evaluated window (<span id="secLabel"></span>)</h2><div class="tablewrap" id="sections"></div></div>
+      <div class="notes" id="warns"></div>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="tab-chart">
+  <div class="card"><h2>Pressure vs time</h2><div id="chartWrap"><div id="chart"></div><div id="selBox"></div><div id="hvLine"></div><div id="hvDot"></div><div id="hvTip"></div></div>
+    <div class="legend"><span><i></i>Pressure</span><span><i class="w"></i>Fastest allowed loss from the start of the judged period</span><span style="color:var(--good)">- - Minimum / maximum test pressure</span><span>Shaded band = judged period · dotted verticals = section boundaries</span><span><b>Hover</b> to read a value · <b>drag across the chart</b> to calculate that part of the test live</span></div>
+    <div class="curline" id="chartCur"><span>Move the mouse over the chart to read the time and pressure.</span></div>
+    <div class="selpanel" id="chartSel"></div>
+  </div>
+</section>
+
+<section class="tab" id="tab-settings">
+  <div class="card"><h2>Pass / fail criteria</h2>
+    <div class="settings">
+      <div>
+        <div class="ctl"><label for="limit">Max loss rate</label><div class="grp"><input class="num" type="number" id="limit" step="0.1" min="0"><span class="sfx"><span class="u">psi</span>/min</span></div><small>Default 5. The loss rate over the evaluated window must be below this.</small></div>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="incl"> A rate exactly equal to the limit also passes (≤)</label>
+      </div>
+      <div class="ctl"><label>Max total loss over the evaluated window, by test length</label>
+        <div id="mlTable"></div>
+        <small>Blank = no limit for that length. The row for the current test length is bold. Default: 75 for the 15-min test.</small></div>
+      <div>
+        <label class="chk"><input type="checkbox" id="reqTrend"> Require a decreasing loss-rate trend to pass</label>
+        <small>The loss per minute must not get worse from the early half of the window to the recent half. Rising pressure is never a failure.</small>
+        <div class="ctl" style="margin-top:12px"><label for="tol">Trend tolerance</label><div class="grp"><input class="num" type="number" id="tol" step="0.05" min="0"><span class="sfx"><span class="u">psi</span>/min</span></div><small>The loss rate may rise by up to this much (early vs recent) and still count as steady. Default 0.25.</small></div>
+      </div>
+      <div>
+        <div class="ctl"><label for="overPct">Test pressure must not exceed</label><div class="grp"><input class="num" type="number" id="overPct" step="0.5" min="0"><span class="sfx">% above the minimum test pressure</span></div><small>Default 5. With a 5,000 minimum the pressure must stay between 5,000 and 5,250.</small></div>
+        <div class="ctl" style="margin-top:12px"><label for="rateMin">Loss rate is measured over the last</label><div class="grp"><input class="num" type="number" id="rateMin" step="1" min="0"><span class="sfx">min of the test period (0 = the whole period)</span></div><small>Default 5: the loss rate over the final 5 minutes must be under the limit.</small></div>
+        <div class="ctl" style="margin-top:12px"><label for="ambTol">Bled back to 0 means at or below</label><div class="grp"><input class="num" type="number" id="ambTol" step="1" min="0"><span class="sfx"><span class="u">psi</span></span></div><small>Used for the "bled down" note after the test.</small></div>
+      </div>
+      <div class="ctl"><label for="unit">Pressure unit label</label><input type="text" id="unit" style="width:90px"><small>Display only (psi, kPa, bar…). No conversion.</small></div>
+    </div>
+    <div class="tools"><button class="btn danger" id="reset">Reset all settings and data</button></div>
+  </div>
+</section>
+
+<section class="tab" id="tab-help">
+  <div class="card help">
+    <h2>How it works · REV 1.6</h2>
+    <p>Pick the test length (5, 10, 15, 30 min or custom) and the reading interval, then type each pressure into the next box as it comes off the gauge. <b>Enter</b> or <b>↓</b> goes to the next box, <b>↑</b> back. New rows appear as you type, so you can keep entering data every minute for hours. Everything is saved in the browser as you type.</p>
+    <p><b>You do not have to fill every box.</b> Skip any minute you missed: all rates use the real time between the readings you did enter. Rows marked * show a rate that spans skipped readings.</p>
+    <h3>Loading data from a file</h3>
+    <p>Drag a CSV or text file anywhere onto the page, use <b>📂 Open file</b>, or paste rows (<b>Paste data</b>, or just Ctrl+V). A preview shows what was found before anything is loaded: the pressure column, the time range, and the reading interval. Both comma-separated and tab-separated rows work, with or without quotes and a header row. The file can end in .csv, .txt or have no extension at all: the contents are what matter. Dates like <code>03.11.2026</code> are read day.month.year. If readings are already entered you choose <b>Replace</b>, <b>Merge by time</b> or <b>Append</b>. When a test log keeps growing, drop the same file again and choose Merge: only the new rows are added, with a count of what was new, updated and already present.</p>
+    <h3>How the result is decided</h3>
+    <p>A test period is <b>N minutes</b> long (the test length: 15 by default). The result is always for <b>one period</b>, shown shaded in the list and chart:</p>
+    <ul>
+      <li><b>Best N min</b> (default): the program tries every N-minute period in the data, including a test log that has the pressure build-up and bleed-off in it, and judges the period that meets the criteria best. It tells you how many periods passed.</li>
+      <li><b>Latest N min</b>: the most recent N minutes.</li>
+      <li><b>Custom range</b>: <b>drag across the chart</b> (the numbers for the selection update live below the chart as you drag), type From and To in minutes, or click a row's time (Shift+click for the end). Times snap to the nearest reading.</li>
+    </ul>
+    <h3>PASS means the period meets all of these</h3>
+    <ul>
+      <li><b>Pressure held</b>: every reading is at or above the minimum test pressure and no more than 5% above it (5,000 → 5,000 to 5,250). Set the minimum test pressure at the top (5,000, 7,500, 10,000 or your own). Leave it blank to switch this check off.</li>
+      <li><b>Loss rate</b>: under the limit (5 psi/min) over the last 5 minutes of the period.</li>
+      <li><b>Total loss</b>: no more than the maximum for that test length (Settings; 75 psi for 15 min).</li>
+      <li><b>Loss trend</b>: the loss per minute is not getting worse from the early half of the period to the recent half (plus a small tolerance). A rise in pressure counts as zero loss and is never a failure.</li>
+    </ul>
+    <p>After the period the program also notes whether the pressure was bled back down to 0. That note does not change PASS or FAIL.</p>
+    <h3>Reading the chart</h3>
+    <p>Move the mouse over the chart to see the time and pressure of the nearest reading. Drag across it to select any part of the test: the duration, start / end / lowest / highest pressure, total loss, loss rates and the pass/fail checks for that selection are calculated as you drag and shown under the chart. Letting go makes it the judged period.</p>
+    <h3>Numbers shown</h3>
+    <ul>
+      <li><b>Whole window</b>: (start − end) ÷ minutes for the period. <b>Last 1 / 5 / 10 min</b>: rolling loss rate ending at the end of the period.</li>
+      <li><b>Last/min</b> and <b>Avg/min</b> on each row: loss over that interval, and the average since the period started.</li>
+      <li><b>Loss per minute, reading to reading</b>: the profile, for example 5 → 4 → 3 → 2 → 2.</li>
+    </ul>
+  </div>
+</section>
+</main>
+<div id="toast" role="status"></div>
+<div id="modal" hidden><div class="mbox" id="mbox"></div></div>
+<div id="dropOv" hidden><div>Drop the file to load its readings<small>CSV, TXT or tab-separated data</small></div></div>
+<input type="file" id="fileIn" hidden>
+
+<script>
+"use strict";
+const REV = "1.6", APP = "JJ's Pressure Test Analyzer";
+const $ = s => document.querySelector(s);
+const KEY = "pressureTrend.v3";
+const DUR = [[5,"5 min"],[10,"10 min"],[15,"15 min"],[30,"30 min"]];
+const IV = [[15,"15 s"],[30,"30 s"],[60,"1 min"],[120,"2 min"]];
+const WN = [[1,"1 min"],[5,"5 min"],[10,"10 min"]];
+const TILES = [1, 5, 10];
+const MAXROWS = 3000;
+const defaults = () => ({test:"",duration:15,interval:60,window:1,limit:5,incl:false,
+  pMin:5000,overPct:5,rateMin:5,ambTol:25,
+  maxLossBy:{"15":75},reqTrend:true,tol:0.25,mode:"best",cFrom:"",cTo:"",unit:"psi",src:null,anch:null,rows:[]});
+
+let S = defaults(), ORIGINAL = null;
+try {
+  const j = JSON.parse(localStorage.getItem(KEY));
+  if (j && typeof j === "object") {
+    S = Object.assign(S, j);
+    S.rows = (Array.isArray(S.rows) ? S.rows : []).slice(0, MAXROWS).map(String);
+    if (!S.maxLossBy || typeof S.maxLossBy !== "object") S.maxLossBy = defaults().maxLossBy;
+    if (S.mode === "auto") S.mode = "best";
+  }
+} catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+/* ---------- helpers ---------- */
+const pos = (v, d) => (Number.isFinite(+v) && +v > 0 ? +v : d);
+const r6 = x => Math.round(x * 1e6) / 1e6;                       // kill floating-point noise before any comparison
+const fp = x => { let t = String(Math.round(x * 1000) / 1000); if (t === "-0") t = "0"; return t.includes(".") ? t : t + ".0"; };   // pressures / losses
+let curOk = r => r < 5;                                            // set by compute(): is this loss rate acceptable?
+const fr = x => { let t = x.toFixed(2); if (curOk(r6(x)) !== curOk(+t)) t = x.toFixed(4); return t === "-0.00" ? "0.00" : t; };   // rates: 2 decimals (more only if rounding would cross the limit)
+const sgn = x => (Math.abs(x) < 0.0005 ? "0.0" : (x > 0 ? "+" : "−") + fp(Math.abs(x)));
+const sgd = x => (Math.abs(x) < 0.0005 ? "0.0" : (x > 0 ? "+" : "−") + (Math.abs(x) >= 1000 ? Math.abs(x).toFixed(0) : Math.abs(x) >= 100 ? Math.abs(x).toFixed(1) : Math.abs(x) >= 10 ? Math.abs(x).toFixed(2) : fp(Math.abs(x))));   // row delta, kept short so big jumps fit
+const sgr = x => (Math.abs(x) < 0.005 ? "0.00" : (x > 0 ? "+" : "−") + Math.abs(x).toFixed(2));
+const mmss = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}` : `${m}:${String(x).padStart(2, "0")}`; };
+function clkRow(i) {                       // clock time of row i when the data came from a time-stamped file, else elapsed time
+  const I = pos(S.interval, 60);
+  if (S.anch && S.anch.iv === S.interval) { const t = new Date(S.anch.t0 + i * I * 1000).toISOString().slice(11, 19); return I % 60 === 0 && t.endsWith(":00") ? t.slice(0, 5) : t; }
+  return mmss(i * I);
+}
+const ARROW = {Decreasing:"▼ Decreasing", Rising:"▲ Rising", Flat:"■ Flat", Mixed:"◆ Mixed"};
+function toast(msg, ms = 1800){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("on"),ms); }
+function nTest() { return Math.max(1, Math.round(pos(S.duration, 15) * 60 / pos(S.interval, 60))); }
+function padRows() { const need = Math.min(MAXROWS, nTest() + 1); while (S.rows.length < need) S.rows.push(""); }
+const numOrNull = v => { const t = String(v).trim(); if (t === "") return null; const x = +t; return Number.isFinite(x) && x >= 0 ? x : NaN; };
+
+/* ---------- calculation ---------- */
+function compute() {
+  const I = pos(S.interval, 60), durSec = pos(S.duration, 15) * 60, Wsec = pos(S.window, 5) * 60;
+  const lim = Number.isFinite(+S.limit) && +S.limit >= 0 && String(S.limit) !== "" ? +S.limit : 5;
+  const isOk = r => (S.incl ? r6(r) <= lim : r6(r) < lim);
+  curOk = isOk;
+  const ml = S.maxLossBy[String(S.duration)];   // max total loss is set per test length
+  const maxLoss = ml === undefined || String(ml).trim() === "" || !Number.isFinite(+ml) ? null : +ml;
+  const tol = String(S.tol).trim() !== "" && Number.isFinite(+S.tol) && +S.tol >= 0 ? +S.tol : 0.25;
+  const pMin = Number.isFinite(+S.pMin) && +S.pMin > 0 ? +S.pMin : 0;                          // minimum test pressure (0 = range check off)
+  const overPct = String(S.overPct).trim() !== "" && Number.isFinite(+S.overPct) && +S.overPct >= 0 ? +S.overPct : 5;
+  const pMax = pMin > 0 ? r6(pMin * (1 + overPct / 100)) : null;                                // must not exceed 5% over the minimum
+  const rateMin = String(S.rateMin).trim() !== "" && Number.isFinite(+S.rateMin) && +S.rateMin >= 0 ? +S.rateMin : 5;   // rate must be under the limit over the last N minutes (0 = whole window)
+  const ambTol = Number.isFinite(+S.ambTol) && +S.ambTol >= 0 ? +S.ambTol : 25;                // "0 psi" after the test = at or below this
+
+  const raw = S.rows.map(r => {
+    let t = String(r).trim();
+    if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, "");   // 4,995 = 4995 (thousands separator)
+    else t = t.replace(",", ".");                                           // 4,5 = 4.5 (decimal comma)
+    if (t === "") return null;
+    return /^-?(\d+\.?\d*|\.\d+)$/.test(t) ? parseFloat(t) : NaN;
+  });
+  // sparse readings: row index -> pressure (null = not entered / not a number). Blank rows are simply skipped.
+  const pts = raw.map(v => (v === null || Number.isNaN(v) ? null : v));
+  const idx = []; pts.forEach((v, i) => { if (v !== null) idx.push(i); });
+  const first = idx.length ? idx[0] : -1, last = idx.length ? idx[idx.length - 1] : -1;
+  const lb = x => { let lo = 0, hi = idx.length; while (lo < hi) { const m = (lo + hi) >> 1; if (idx[m] < x) lo = m + 1; else hi = m; } return lo; };   // first position with idx >= x
+  const leIdx = x => { const k = lb(Math.floor(x) + 1) - 1; return k >= 0 ? idx[k] : -1; };      // last entered row at or before x
+  const rng = (a, b) => idx.slice(lb(a), lb(b + 1));                                             // entered rows in [a, b]
+  const nearest = x => { const k = lb(x); if (k <= 0) return idx[0]; if (k >= idx.length) return idx[idx.length - 1]; return x - idx[k - 1] <= idx[k] - x ? idx[k - 1] : idx[k]; };
+  const nT = nTest(), n = Math.max(1, Math.round(Wsec / I));
+  const exactW = Math.abs(n * I - Wsec) < 1e-6, exactD = Math.abs(nT * I - durSec) < 1e-6;
+
+  // rate/trend between two entered rows a<b, using the real time between them and any entered readings in between
+  function seg(a, b) {
+    const ps = rng(a, b), k = b - a, mins = k * I / 60;
+    const start = pts[a], end = pts[b], loss = r6(start - end), rate = r6(loss / mins);
+    let sx = 0, sy = 0, sxx = 0, sxy = 0, up = 0;
+    ps.forEach((j, q) => {
+      const x = (j - a) * I / 60, y = pts[j];
+      sx += x; sy += y; sxx += x * x; sxy += x * y;
+      if (q > 0 && y > pts[ps[q - 1]]) up++;
+    });
+    const m = ps.length, slope = (m * sxy - sx * sy) / (m * sxx - sx * sx), e = 1e-9;
+    const trend = loss > e && slope < -e ? "Decreasing" : loss < -e && slope > e ? "Rising" : Math.abs(loss) <= e && Math.abs(slope) <= e ? "Flat" : "Mixed";
+    return {a, b, k, count: m, start, end, loss, mins, rate, slope, up, trend, rateOk: isOk(rate)};
+  }
+  // is the loss rate getting worse? first half vs second half of [a,b]; a rise in pressure counts as zero loss
+  function trendOf(a, b) {
+    const inside = rng(a + 1, b - 1); if (!inside.length) return null;
+    const mid = (a + b) / 2; let mI = inside[0];
+    inside.forEach(i => { if (Math.abs(i - mid) < Math.abs(mI - mid)) mI = i; });
+    const r1 = Math.max(0, r6((pts[a] - pts[mI]) / ((mI - a) * I / 60))), r2 = Math.max(0, r6((pts[mI] - pts[b]) / ((b - mI) * I / 60))), d = r6(r2 - r1);
+    return {r1, r2, label: d < -tol ? "Improving" : d > tol ? "Worsening" : "Steady", good: d <= tol};
+  }
+  // every pass/fail criterion for the period [a, b]
+  function evalWin(a, b) {
+    const sg = seg(a, b), ps = rng(a, b);
+    let lo = Infinity, hi = -Infinity, firstBelow = -1, firstAbove = -1, out = 0;
+    ps.forEach(i => {
+      const v = pts[i]; if (v < lo) lo = v; if (v > hi) hi = v;
+      if (pMin > 0) { const rv = r6(v); if (rv < pMin) { out++; if (firstBelow < 0) firstBelow = i; } else if (rv > pMax) { out++; if (firstAbove < 0) firstAbove = i; } }
+    });
+    const rangeOk = out === 0;
+    let rs = sg;                                                   // loss rate over the last N minutes of the period
+    if (rateMin > 0) { const off = Math.max(1, Math.round(rateMin * 60 / I)), j = leIdx(b - off), jj = j >= a ? j : a; if (jj < b) rs = seg(jj, b); }
+    const tr = trendOf(a, b), lossOk = maxLoss === null || sg.loss <= maxLoss, trendOk = !tr || tr.good;
+    const viol = [];
+    if (!rangeOk) viol.push("PRESSURE RANGE"); if (!rs.rateOk) viol.push("LOSS RATE"); if (!lossOk) viol.push("TOTAL LOSS"); if (S.reqTrend && !trendOk) viol.push("LOSS TREND");
+    return {sg, lo, hi, firstBelow, firstAbove, out, rangeOk, rs, tr, lossOk, trendOk, viol};
+  }
+
+  // ----- choose the period [ws, we] to judge -----
+  let ws = -1, we = -1, complete = false, winMsg = "", bestInfo = null, E = null;
+  if (idx.length >= 2) {
+    if (S.mode === "custom") {
+      const f = numOrNull(S.cFrom), t = numOrNull(S.cTo);
+      we = t === null || Number.isNaN(t) ? last : nearest(t * 60 / I);
+      ws = f === null || Number.isNaN(f) ? first : nearest(f * 60 / I);
+      if (ws >= we) { winMsg = "Custom range: the From time must be earlier than the To time, and both need a reading near them."; ws = we = -1; }
+    } else if (S.mode === "latest") {
+      we = last;                          // latest N minutes, ending at the newest reading
+      const j = leIdx(we - nT);
+      ws = j >= 0 ? j : first;
+    } else {                              // best: try every N-minute period in the data and take the one that satisfies the criteria best
+      let best = null, cnt = 0, passN = 0;
+      for (let q = 0; q < idx.length; q++) {
+        const a = idx[q], k = lb(a + nT); if (k >= idx.length) break;
+        const b = idx[k], e = evalWin(a, b); cnt++; if (!e.viol.length) passN++;
+        const key = [e.viol.length, e.out, Math.max(0, e.sg.loss), -a];       // fewest failed criteria, fewest out-of-range readings, least loss, most recent
+        let better = !best;
+        if (best) for (let z = 0; z < key.length; z++) { if (key[z] !== best.key[z]) { better = key[z] < best.key[z]; break; } }
+        if (better) best = {a, b, e, key};
+      }
+      if (best) { ws = best.a; we = best.b; E = best.e; bestInfo = {total: cnt, pass: passN}; } else { ws = first; we = last; }
+    }
+    if (ws >= 0) complete = we - ws >= nT;
+  }
+
+  let overall = null, rateTrend = null, bleed = null;
+  if (ws >= 0) {
+    if (!E) E = evalWin(ws, we);
+    overall = Object.assign({}, E.sg, {lossOk: E.lossOk, trendOk: E.trendOk, rangeOk: E.rangeOk, rs: E.rs, lo: E.lo, hi: E.hi, firstBelow: E.firstBelow, firstAbove: E.firstAbove, viol: E.viol});
+    overall.pass = E.viol.length === 0;
+    rateTrend = E.tr;
+    const after = idx.filter(i => i > we);                          // has the pressure been bled back to ~0 after this period?
+    if (!after.length) bleed = {none: true};
+    else { let m = Infinity, at = -1; after.forEach(i => { if (pts[i] < m) { m = pts[i]; at = i; } }); bleed = {ok: m <= ambTol, min: m, at}; }
+  }
+
+  // sections inside the window: each closes at the last reading entered by the end of its time slot
+  const sections = [];
+  if (overall) {
+    let anchor = ws;
+    for (let B = ws + n; anchor < we; B += n) {
+      const end = leIdx(Math.min(B, we));
+      if (end > anchor) {
+        const sc = seg(anchor, end);
+        sc.complete = B <= we;
+        const prev = sections[sections.length - 1];
+        sc.drate = prev ? sc.rate - prev.rate : null;
+        sections.push(sc); anchor = end;
+      }
+    }
+  }
+
+  // reading-to-reading loss rates inside the window
+  const steps = [];
+  for (let q = 1; q < idx.length; q++) if (ws >= 0 && idx[q - 1] >= ws && idx[q] <= we)
+    steps.push(r6((pts[idx[q - 1]] - pts[idx[q]]) / ((idx[q] - idx[q - 1]) * I / 60)));
+
+  // rolling tiles: window end vs the nearest entered reading that is at least w minutes older
+  const rolling = TILES.map(w => {
+    const off = Math.round(w * 60 / I);
+    if (off < 1 || Math.abs(off * I - w * 60) > 1e-6) return {w, na: `needs an interval that divides ${w} min`};
+    if (we < 0) return {w, na: "needs 2 readings"};
+    const j = leIdx(we - off);
+    if (j < 0) { const need = off - (we - first); return {w, na: `${need} more reading${need > 1 ? "s" : ""}`}; }
+    return {w, off, s: seg(j, we)};
+  });
+
+  let gaps = 0; if (ws >= 0) gaps = (we - ws + 1) - rng(ws, we).length;
+  return {raw, pts, idx, first, last, nT, n, I, durSec, exactW, exactD, lim, maxLoss, tol, isOk, mode: S.mode, ws, we, complete, winMsg,
+          pMin, pMax, overPct, rateMin, ambTol, bestInfo, bleed, overall, rateTrend, steps, sections, rolling, gaps,
+          evalRange: evalWin, nearest: x => (idx.length ? nearest(x) : -1)};
+}
+
+/* ---------- controls ---------- */
+function chips(id, list, cur, attr) {
+  $(id).innerHTML = list.map(([v,l]) => `<button class="chip${String(cur)===String(v)?" on":""}" data-${attr}="${v}">${l}</button>`).join("");
+}
+function buildBar() {
+  chips("#dChips", DUR, S.duration, "d"); chips("#ivChips", IV, S.interval, "iv"); chips("#wChips", WN, S.window, "w");
+  chips("#mChips", [["best", `Best ${S.duration} min`], ["latest", `Latest ${S.duration} min`], ["custom", "Custom range"]], S.mode, "m");
+  chips("#pChips", [[5000, "5,000"], [7500, "7,500"], [10000, "10,000"]], S.pMin, "p");
+  $("#cRange").hidden = S.mode !== "custom";
+  [["#dNum","duration"],["#ivNum","interval"],["#wNum","window"],["#cFrom","cFrom"],["#cTo","cTo"],["#pNum","pMin"]].forEach(([id,k]) => { if (document.activeElement !== $(id)) $(id).value = S[k] > 0 || typeof S[k] === "string" ? S[k] : ""; });
+}
+function buildML() {
+  const lens = [...new Set([5, 10, 15, 30, Math.round(pos(S.duration, 15) * 1000) / 1000])].sort((a, b) => a - b);
+  $("#mlTable").innerHTML = lens.map(L => `<div class="mlrow${L === +S.duration ? " cur" : ""}"><span>${L}-min test</span><input class="num" type="number" min="0" step="any" data-len="${L}" placeholder="none" value="${S.maxLossBy[String(L)] ?? ""}"><span class="sfx">${S.unit} max</span></div>`).join("");
+}
+function changed() { padRows(); ensureRows(); buildBar(); buildML(); update(); }
+document.addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  if (b.dataset.d) S.duration = +b.dataset.d;
+  if (b.dataset.iv) S.interval = +b.dataset.iv;
+  if (b.dataset.w) S.window = +b.dataset.w;
+  if (b.dataset.m) S.mode = b.dataset.m;
+  if (b.dataset.p) S.pMin = +b.dataset.p;
+  changed();
+});
+[["#dNum","duration"],["#ivNum","interval"],["#wNum","window"]].forEach(([id,k]) =>
+  $(id).addEventListener("input", e => { const v = parseFloat(e.target.value); if (v > 0) { S[k] = v; changed(); } }));
+$("#pNum").addEventListener("input", e => { const v = parseFloat(e.target.value); S.pMin = v > 0 ? v : 0; buildBar(); update(); });
+$("#cFrom").addEventListener("input", e => { S.cFrom = e.target.value; update(); });
+$("#cTo").addEventListener("input", e => { S.cTo = e.target.value; update(); });
+$("#test").addEventListener("input", e => { S.test = e.target.value; save(); });
+$("#limit").addEventListener("input", e => { S.limit = e.target.value === "" ? 5 : parseFloat(e.target.value); update(); });
+$("#mlTable").addEventListener("input", e => { if (e.target.dataset.len) { S.maxLossBy[e.target.dataset.len] = e.target.value; update(); } });
+$("#tol").addEventListener("input", e => { S.tol = e.target.value === "" ? 0.25 : parseFloat(e.target.value); update(); });
+$("#reqTrend").addEventListener("change", e => { S.reqTrend = e.target.checked; update(); });
+$("#overPct").addEventListener("input", e => { S.overPct = e.target.value === "" ? 5 : parseFloat(e.target.value); update(); });
+$("#rateMin").addEventListener("input", e => { S.rateMin = e.target.value === "" ? 5 : parseFloat(e.target.value); update(); });
+$("#ambTol").addEventListener("input", e => { S.ambTol = e.target.value === "" ? 25 : parseFloat(e.target.value); update(); });
+$("#incl").addEventListener("change", e => { S.incl = e.target.checked; update(); });
+$("#unit").addEventListener("input", e => { S.unit = e.target.value.replace(/[<>&"'`]/g, "") || "psi"; update(); });
+$("#unit").addEventListener("change", buildML);
+
+document.querySelectorAll(".tabbtn").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".tabbtn").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.id === "tab-" + b.dataset.tab));
+}));
+
+/* ---------- rows ---------- */
+function ensureRows() {
+  const box = $("#rows");
+  while (box.children.length < S.rows.length) {
+    const i = box.children.length, d = document.createElement("div");
+    d.className = "row";
+    d.innerHTML = `<span class="idx">${i+1}</span><span class="tm" data-i="${i}" title="Click: start custom range here · Shift+click: end it here"></span><input type="text" inputmode="decimal" autocomplete="off" data-i="${i}" placeholder="—" aria-label="Pressure ${i+1}"><span class="dl"></span><span class="rt"></span><span class="av"></span>`;
+    box.appendChild(d);
+  }
+  while (box.children.length > S.rows.length) box.lastChild.remove();
+  [...box.querySelectorAll("input")].forEach((el, i) => { if (el.value !== S.rows[i]) el.value = S.rows[i]; });
+}
+$("#rows").addEventListener("input", e => {
+  const el = e.target; if (el.tagName !== "INPUT") return;
+  const i = +el.dataset.i; S.rows[i] = el.value;
+  if (i === S.rows.length - 1 && el.value.trim() !== "" && S.rows.length < MAXROWS) { S.rows.push(""); ensureRows(); }
+  update();
+});
+$("#rows").addEventListener("keydown", e => {
+  if (e.target.tagName !== "INPUT") return;
+  const ins = [...$("#rows").querySelectorAll("input")], i = ins.indexOf(e.target);
+  if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); (ins[i+1] || e.target).focus(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); (ins[i-1] || e.target).focus(); }
+});
+$("#rows").addEventListener("click", e => {
+  const t = e.target.closest(".tm"); if (!t) return;
+  const mins = String(Math.round(+t.dataset.i * pos(S.interval, 60) / 60 * 1000) / 1000);
+  S.mode = "custom";
+  if (e.shiftKey) S.cTo = mins; else S.cFrom = mins;
+  buildBar(); update();
+});
+$("#add5").onclick = () => { for (let k = 0; k < 15 && S.rows.length < MAXROWS; k++) S.rows.push(""); ensureRows(); update(); };
+$("#newTest").onclick = () => {
+  const has = S.rows.some(r => String(r).trim() !== "") || S.test;
+  if (has && !confirm("Start a new test?\n\nThis clears the readings and the test name. Your settings (limits, test length, interval) are kept.")) return;
+  snapshot();
+  S.rows = []; S.test = ""; S.src = null; S.anch = null; S.cFrom = S.cTo = ""; S.mode = "best";
+  $("#test").value = ""; padRows(); ensureRows(); buildBar();
+  document.querySelector('.tabbtn[data-tab="live"]').click();
+  $("#rows").scrollTop = 0; update();
+  $("#rows input").focus();
+  toast("New test started. (↶ Undo is below the readings if that was a mistake.)", 3500);
+};
+$("#reset").onclick = () => { if (confirm("Reset settings and clear all readings?")) { S = defaults(); $("#test").value = ""; padRows(); ensureRows(); buildBar(); buildML(); update(); toast("Reset"); } };
+$("#print").onclick = () => window.print();
+
+/* ---------- render ---------- */
+function tile(label, t) {
+  if (!t || !t.s) return `<div class="tile"><div class="k">${label}</div><div class="v dim">—</div><div class="sub">${t ? t.na : "needs 2 readings"}</div></div>`;
+  const s = t.s;
+  return `<div class="tile ${s.rateOk ? "tok" : "tbad"}"><div class="k">${label}</div><div class="v">${fr(s.rate)}<span class="sfx"> ${S.unit}/min</span></div><div class="sub">${ARROW[s.trend]} · ${s.loss > 0 ? "−" : s.loss < 0 ? "+" : ""}${fp(Math.abs(s.loss))} ${S.unit}${t.off && s.k !== t.off ? " · over " + mmss(s.mins * 60) : ""}</div></div>`;
+}
+
+function update() {
+  const M = compute(), u = S.unit, O = M.overall;
+  LASTM = M;
+  save();
+  document.querySelectorAll(".u").forEach(x => x.textContent = u);
+  $("#secLabel").textContent = `${S.window} min each`;
+  if (document.activeElement !== $("#limit")) $("#limit").value = S.limit;
+  if (document.activeElement !== $("#tol")) $("#tol").value = S.tol;
+  if (document.activeElement !== $("#unit")) $("#unit").value = u;
+  $("#incl").checked = !!S.incl; $("#reqTrend").checked = !!S.reqTrend;
+  if (document.activeElement !== $("#overPct")) $("#overPct").value = S.overPct;
+  if (document.activeElement !== $("#rateMin")) $("#rateMin").value = S.rateMin;
+  if (document.activeElement !== $("#ambTol")) $("#ambTol").value = S.ambTol;
+
+  // rows
+  const rows = $("#rows").children;
+  let prev = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i], inp = r.querySelector("input"), dl = r.querySelector(".dl"), rt = r.querySelector(".rt"), av = r.querySelector(".av");
+    const inW = M.ws >= 0 && i >= M.ws && i <= M.we;
+    r.querySelector(".tm").title = "Elapsed " + mmss(i * M.I) + " · click: start custom range here · Shift+click: end it here";
+    r.querySelector(".tm").innerHTML = clkRow(i) + (M.ws >= 0 && i === M.ws ? "<b>START</b>" : M.ws >= 0 && i === M.we ? "<b>END</b>" : "");
+    r.classList.toggle("inwin", inW);
+    r.classList.toggle("ws", M.ws >= 0 && i === M.ws);
+    r.classList.toggle("we", M.ws >= 0 && i === M.we);
+    inp.classList.toggle("invalid", Number.isNaN(M.raw[i]));
+    dl.textContent = rt.textContent = av.textContent = ""; rt.className = "rt"; av.className = "av"; rt.title = "";
+    if (M.pts[i] !== null) {
+      if (prev >= 0) {
+        const d = M.pts[i] - M.pts[prev], mins = (i - prev) * M.I / 60, rate = r6(-d / mins);
+        dl.textContent = sgd(d);
+        rt.textContent = fr(rate) + (i - prev > 1 ? "*" : ""); rt.classList.add(M.isOk(rate) ? "good" : "bad");
+        rt.title = `over ${mmss(mins * 60)} since the previous entered reading`;
+        if (M.ws >= 0 && i > M.ws && i <= M.we) {
+          const avg = r6((M.pts[M.ws] - M.pts[i]) / ((i - M.ws) * M.I / 60));
+          av.textContent = fr(avg); av.classList.add(M.isOk(avg) ? "good" : "bad");
+        }
+      }
+      prev = i;
+    }
+  }
+
+  // status card
+  const clk = i => (S.anch && S.anch.iv === S.interval ? new Date(S.anch.t0 + i * M.I * 1000).toISOString().slice(11, 19) : mmss(i * M.I));
+  const span = O ? (M.we - M.ws) * M.I : 0, pct = Math.min(100, span / M.durSec * 100);
+  const U = u.toUpperCase();
+  const reasons = O ? O.viol : [];
+  const modeName = M.mode === "best" ? `BEST ${S.duration} MIN PERIOD` : M.mode === "latest" ? `LATEST ${S.duration} MIN` : "CUSTOM RANGE";
+  let vcls = "v-wait", vtxt = "WAITING", vsub = "enter 2 readings";
+  if (O && M.complete) {
+    vcls = O.pass ? "v-pass" : "v-fail"; vtxt = O.pass ? "PASS" : "FAIL";
+    vsub = O.pass ? modeName : (M.mode === "best" ? "BEST PERIOD FAILS: " : "FAILED: ") + reasons.join(", ");
+  } else if (O) {
+    vcls = (reasons.length ? "v-fail" : "v-pass") + " v-prov";
+    const rtxt = `${M.lim} ${U}/MIN`;
+    vtxt = !O.rangeOk ? (O.firstBelow >= 0 ? `BELOW ${M.pMin} ${U}` : `ABOVE ${M.pMax} ${U}`) : !O.rs.rateOk ? (S.incl ? `ABOVE ${rtxt}` : `${rtxt} OR MORE`) : !O.lossOk ? `ABOVE ${M.maxLoss} ${U} TOTAL` : (S.reqTrend && !O.trendOk) ? "LOSS RATE WORSENING" : (S.incl ? `${rtxt} OR LESS` : `UNDER ${rtxt}`);
+    vsub = M.mode === "custom" ? "RANGE SHORTER THAN TEST LENGTH · NOT FINAL" : "NOT ENOUGH TIME YET · NOT FINAL";
+  }
+  const nextDue = M.last >= 0 ? `next reading ${mmss((M.last + 1) * M.I)}` : "";
+  const checks = [];
+  if (O) {
+    if (M.pMin > 0) {
+      const bits = [];
+      if (O.firstBelow >= 0) bits.push(`dropped below ${M.pMin} at ${clk(O.firstBelow)} (low ${fp(O.lo)})`);
+      if (O.firstAbove >= 0) bits.push(`went above ${M.pMax} at ${clk(O.firstAbove)} (high ${fp(O.hi)})`);
+      checks.push(`<li class="${O.rangeOk ? "ok" : "no"}">${O.rangeOk ? `Pressure stayed between ${M.pMin} and ${M.pMax} ${u} (this period: ${fp(O.lo)} to ${fp(O.hi)})` : `Pressure must stay between ${M.pMin} and ${M.pMax} ${u}: it ${bits.join(" and ")}`}</li>`);
+    }
+    const rl = M.rateMin > 0 ? `last ${M.rateMin} min` : "whole period";
+    checks.push(`<li class="${O.rs.rateOk ? "ok" : "no"}">Loss rate over the ${rl}: ${fr(O.rs.rate)} ${O.rs.rateOk ? (S.incl ? "≤" : "&lt;") : (S.incl ? "&gt;" : "≥")} ${M.lim} ${u}/min (${fp(O.rs.loss)} ${u} in ${mmss(O.rs.mins * 60)})</li>`);
+    if (M.maxLoss !== null) checks.push(`<li class="${O.lossOk ? "ok" : "no"}">Total loss ${fp(O.loss)} ${O.lossOk ? "≤" : "&gt;"} ${M.maxLoss} ${u} (max for a ${S.duration}-min test)</li>`);
+    const T = M.rateTrend;
+    checks.push(T ? `<li class="${T.good ? "ok" : (S.reqTrend ? "no" : "")}">Loss-rate trend: <b>${T.label.toLowerCase()}</b> · early ${fr(T.r1)} → recent ${fr(T.r2)} ${u}/min${S.reqTrend ? "" : " (not required)"}</li>` : `<li>Loss-rate trend: needs a reading between the period start and end</li>`);
+    checks.push(`<li class="${["Decreasing","Flat","Rising"].includes(O.trend) ? "ok" : ""}">Pressure: ${O.trend.toLowerCase()}${O.trend === "Rising" ? " (a rise in pressure is not a failure)" : ""}${O.up ? ` · ${O.up} uptick${O.up > 1 ? "s" : ""} between readings` : ""}</li>`);
+    const B = M.bleed;
+    if (B) checks.push(B.none ? `<li>After the test: no later readings yet (the pressure must be bled back down to 0).</li>` : `<li class="${B.ok ? "ok" : ""}">${B.ok ? `Bled back down to 0 afterwards (${fp(B.min)} ${u} at ${clk(B.at)}).` : `Not bled down to 0 yet: the lowest reading after the test is ${fp(B.min)} ${u} (at ${clk(B.at)}).`}</li>`);
+    if (M.bestInfo) checks.push(`<li>Best of ${M.bestInfo.total} possible ${S.duration}-minute periods · <b>${M.bestInfo.pass}</b> meet all the criteria.</li>`);
+  }
+  const winLabel = !O ? "" : `${M.mode === "best" ? "best" : M.mode === "latest" ? "latest" : "custom"} period ${clk(M.ws)}–${clk(M.we)}`;
+  const chainSteps = M.steps.length > 60 ? M.steps.slice(-60) : M.steps;
+  $("#status").innerHTML = `<h2>${S.test ? S.test.replace(/[<>&]/g, "") + " · " : ""}${S.duration}-min test${winLabel ? " · " + winLabel : ""}</h2>
+    <div class="hero"><div class="verdict ${vcls}">${vtxt}<small>${vsub}</small></div>
+      <div class="prog"><div class="txt"><span>period ${mmss(span)} / ${mmss(M.durSec)}</span><span>${M.last >= 0 ? `test ${mmss(M.last * M.I)} · ${M.idx.length} readings · ${nextDue}` : ""}</span></div><div class="track"><i style="width:${pct}%"></i></div></div></div>
+    <div class="tiles">${tile("Whole period", O && {s: O})}${M.rolling.map(t => tile("Last " + t.w + " min", t)).join("")}</div>
+    ${checks.length ? `<ul class="checks">${checks.join("")}</ul>` : ""}
+    ${chainSteps.length ? `<div class="chain"><span class="sfx">Loss per minute, reading to reading:</span> ${M.steps.length > 60 ? "… → " : ""}${chainSteps.map(r => `<b class="${M.isOk(r) ? "good" : "bad"}">${fr(r)}</b>`).join(" → ")}</div>` : ""}`;
+
+  // sections table
+  if (!O) $("#sections").innerHTML = `<div class="empty">${M.winMsg || "Enter a second reading to start the profile."}</div>`;
+  else {
+    const body = M.sections.map((s, k) => {
+      const dr = s.drate === null ? "—" : Math.abs(s.drate) < 0.005 ? "steady" : (s.drate < 0 ? "▼ " : "▲ ") + sgr(s.drate) + (s.drate < 0 ? " improving" : " worse");
+      const drc = s.drate === null || Math.abs(s.drate) < 0.005 ? "" : s.drate < 0 ? "good" : "warnc";
+      const pill = s.rateOk ? `<span class="pill pass" title="Loss rate in this section is within the limit">${S.incl ? "≤" : "<"} ${M.lim}</span>` : `<span class="pill fail" title="Loss rate in this section is outside the limit. Only the overall result decides pass/fail.">${S.incl ? ">" : "≥"} ${M.lim}</span>`;
+      return `<tr><td class="t">${k + 1} <span class="sfx">${clkRow(s.a)}–${clkRow(s.b)}</span></td><td>${fp(s.start)}</td><td>${fp(s.end)}</td><td>${fp(s.loss)}</td>
+        <td class="${s.rateOk ? "good" : "bad"}">${fr(s.rate)}</td><td class="t ${s.trend === "Decreasing" ? "" : "warnc"}">${s.trend}${s.up ? ` <span class="sfx">(${s.up}↑)</span>` : ""}</td>
+        <td class="t ${drc}">${dr}</td><td>${pill}</td></tr>`;
+    }).join("");
+    const tot = `<tr class="total"><td class="t">Window <span class="sfx">${clkRow(O.a)}–${clkRow(O.b)}</span></td><td>${fp(O.start)}</td><td>${fp(O.end)}</td><td>${fp(O.loss)}</td>
+        <td class="${O.rateOk ? "good" : "bad"}">${fr(O.rate)}</td><td class="t">${O.trend}</td><td class="t ${M.rateTrend ? (M.rateTrend.good ? "good" : "warnc") : ""}">${M.rateTrend ? M.rateTrend.label.toLowerCase() : "—"}</td>
+        <td>${M.complete ? `<span class="pill ${O.pass ? "pass" : "fail"}">${O.pass ? "PASS" : "FAIL"}</span>` : `<span class="pill live">${reasons.length ? "OUTSIDE LIMIT" : "WITHIN LIMIT"}</span>`}</td></tr>`;
+    $("#sections").innerHTML = `<table><thead><tr><th>Section</th><th>Start</th><th>End</th><th>Loss</th><th>${u}/min</th><th>Trend</th><th title="Change in loss rate vs previous section">Δ rate</th><th>vs limit</th></tr></thead><tbody>${body}${tot}</tbody></table>`;
+  }
+
+  // warnings
+  const w = [];
+  if (!M.exactD) w.push(`Test length (${S.duration} min) is not a multiple of the ${S.interval}s interval; the window is ${mmss(M.nT * M.I)} (${M.nT} intervals).`);
+  if (!M.exactW) w.push(`Section length (${S.window} min) is not a multiple of the ${S.interval}s interval; sections use ${M.n} readings = ${mmss(M.n * M.I)}.`);
+  if (S.src) {
+    const sr = S.src, pick = M.mode === "best" ? "The pass/fail result uses the best period found in the data (shaded)." : "Check the shaded period: drag across the chart, or click row times, to pick the part of the test you want judged.";
+    w.push(sr.how === "merge" ? `Merged ${sr.name}: ${sr.added} new, ${sr.changed} updated, ${sr.same} unchanged. ${pick}` : sr.how === "append" ? `Appended ${sr.added} readings from ${sr.name}. ${pick}` : `Loaded ${sr.n} readings from ${sr.name} (${sr.first} → ${sr.last}). ${pick}`);
+  }
+  if (M.winMsg) w.push(M.winMsg);
+  if (M.raw.some(Number.isNaN)) w.push("A box contains something that is not a number (red outline). It is ignored.");
+  if (M.first > 0) w.push(`Row 1 is empty; the first entered reading (${mmss(M.first * M.I)}) is used as the start.`);
+  if (M.gaps > 0) w.push(`${M.gaps} box${M.gaps > 1 ? "es" : ""} skipped inside the evaluated window. Rates use the real time between the readings you entered (marked * on the row).`);
+  if (O && M.complete && (M.we - M.ws) > M.nT) w.push(`The window spans ${mmss(O.mins * 60)}, longer than ${S.duration} min, because readings were skipped near its start.`);
+  $("#warns").innerHTML = w.map(x => `<p class="note">⚠ ${x}</p>`).join("");
+
+  drawChart(M);
+  $("#chartSel").innerHTML = selPanel(M, M.ws, M.we, M.mode === "best" ? `Judged period (best ${S.duration} min)` : M.mode === "latest" ? `Judged period (latest ${S.duration} min)` : "Judged period (custom range)", false);
+}
+
+let chartGeo = null, LASTM = null;
+function drawChart(M) {
+  const el = $("#chart"), L = M.idx, pts = L.map(i => M.pts[i]);
+  if (L.length < 2) { el.innerHTML = `<div class="empty">Enter at least two readings to see the chart.</div>`; return; }
+  const W = 960, H = 400, Lm = 64, Rm = 20, Tm = 24, Bm = 46, pw = W - Lm - Rm, ph = H - Tm - Bm;
+  const st = M.I / 60, durMin = M.nT * st, winMin = M.n * st;
+  const xmax = Math.max(M.last * st, st);
+  chartGeo = {W, H, Lm, pw, xmax, Tm, ph, st};
+  let y0 = Math.min(...pts), y1 = Math.max(...pts);
+  const pad = (y1 - y0) * 0.15 || 1; y0 -= pad; y1 += pad;
+  const X = t => Lm + t / xmax * pw, Y = p => Tm + (1 - (p - y0) / (y1 - y0)) * ph;
+  chartGeo.Y = Y;
+  let g = "";
+  for (let i = 0; i <= 5; i++) {
+    const p = y0 + (y1 - y0) * i / 5, y = Y(p);
+    g += `<line class="gl" x1="${Lm}" x2="${W - Rm}" y1="${y}" y2="${y}"/><text x="${Lm - 8}" y="${y + 4}" text-anchor="end">${p.toFixed(1)}</text>`;
+  }
+  for (let i = 0; i <= 6; i++) { const t = xmax * i / 6; g += `<text x="${X(t)}" y="${H - Bm + 20}" text-anchor="middle">${mmss(t * 60)}</text>`; }
+  let shade = "", lim = "", endl = "", band = "";
+  if (M.pMin > 0) [M.pMin, M.pMax].forEach((v, q) => { band += `<line class="band" x1="${Lm}" x2="${W - Rm}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${W - Rm - 4}" y="${Y(v) + (q ? -4 : 13)}" text-anchor="end" style="fill:var(--good)">${q ? "max" : "min"} test pressure ${v}</text>`; });
+  if (M.ws >= 0) {
+    const t0 = M.ws * st, t1 = M.we * st;
+    shade += `<rect x="${X(t0)}" y="${Tm}" width="${Math.max(2, X(t1) - X(t0))}" height="${ph}" fill="var(--shade)"/>`;
+    const nSec = Math.ceil((M.we - M.ws) / M.n);
+    if (nSec <= 40) for (let k = 0; k < nSec; k++) {
+      const tb = t0 + k * winMin;
+      shade += `<line class="bd" x1="${X(tb)}" x2="${X(tb)}" y1="${Tm}" y2="${Tm + ph}"/>${nSec <= 12 ? `<text x="${X(tb) + 6}" y="${Tm + 14}">§${k + 1}</text>` : ""}`;
+    }
+    endl = `<line class="endl" x1="${X(t0)}" x2="${X(t0)}" y1="${Tm}" y2="${Tm + ph}"/><line class="endl" x1="${X(t1)}" x2="${X(t1)}" y1="${Tm}" y2="${Tm + ph}"/>`;
+    const tEnd = Math.min(t0 + durMin, xmax);
+    lim = `<line class="lim" x1="${X(t0)}" y1="${Y(M.pts[M.ws])}" x2="${X(tEnd)}" y2="${Y(M.pts[M.ws] - M.lim * (tEnd - t0))}"/>`;
+  }
+  const path = pts.map((p, q) => `${q ? "L" : "M"}${X(L[q] * st).toFixed(1)},${Y(p).toFixed(1)}`).join("");
+  const r = pts.length > 300 ? 2 : pts.length > 120 ? 3 : 4.5;
+  const dots = pts.map((p, q) => `<circle class="dot" r="${r}" cx="${X(L[q] * st)}" cy="${Y(p)}"><title>${mmss(L[q] * M.I)} — ${p} ${S.unit}</title></circle>`).join("");
+  el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pressure versus time">
+    <defs><clipPath id="clip"><rect x="${Lm}" y="${Tm}" width="${pw}" height="${ph}"/></clipPath></defs>
+    ${g}${shade}${endl}<g clip-path="url(#clip)">${band}${lim}</g><path class="ln" d="${path}"/>${dots}
+    <text x="${Lm + pw / 2}" y="${H - 6}" text-anchor="middle">Elapsed time</text>
+    <text transform="translate(16 ${Tm + ph / 2}) rotate(-90)" text-anchor="middle">${S.unit}</text></svg>`;
+}
+
+/* ---------- export ---------- */
+function summaryText() {
+  const M = compute(), u = S.unit, O = M.overall, out = [];
+  out.push(`${APP} REV ${REV}${S.test ? " — " + S.test : ""} — ${new Date().toLocaleString()}`);
+  out.push(`${S.duration} min test, ${S.interval}s interval, rate limit ${S.incl ? "<=" : "<"} ${M.lim} ${u}/min over the ${M.rateMin > 0 ? "last " + M.rateMin + " min" : "whole period"}${M.maxLoss !== null ? `, max total loss ${M.maxLoss} ${u}` : ""}${M.pMin > 0 ? `, pressure ${M.pMin}-${M.pMax} ${u}` : ""}${S.reqTrend ? `, loss-rate trend must not worsen (tolerance ${M.tol})` : ""}`);
+  out.push(`Readings entered: ${M.idx.length}, test time ${M.last >= 0 ? mmss(M.last * M.I) : "0:00"}`);
+  if (O) out.push(`${M.mode === "best" ? "Best " + S.duration + " min period" : M.mode === "latest" ? "Latest " + S.duration + " min period" : "Custom range"} ${clkRow(M.ws)}-${clkRow(M.we)}: ${M.complete ? (O.pass ? "PASS" : "FAIL (" + O.viol.join(", ") + ")") : "NOT FINAL (period shorter than test length)"} — ${fp(O.start)} -> ${fp(O.end)} ${u}, pressure ${fp(O.lo)}-${fp(O.hi)}, loss ${fp(O.loss)} in ${mmss(O.mins * 60)} = ${fr(O.rate)} ${u}/min (last ${M.rateMin} min: ${fr(O.rs.rate)}), pressure ${O.trend.toLowerCase()}${M.rateTrend ? ", loss rate " + M.rateTrend.label.toLowerCase() + " (" + fr(M.rateTrend.r1) + " -> " + fr(M.rateTrend.r2) + ")" : ""}`);
+  M.rolling.forEach(t => { if (t.s) out.push(`Last ${t.w} min of window: ${fr(t.s.rate)} ${u}/min (${t.s.trend.toLowerCase()})`); });
+  M.sections.forEach((s, k) => out.push(`Section ${k + 1} (${clkRow(s.a)}-${clkRow(s.b)}): ${fp(s.start)} -> ${fp(s.end)}, ${fr(s.rate)} ${u}/min, ${s.trend.toLowerCase()}, ${s.rateOk ? "within" : "outside"} limit`));
+  if (M.steps.length) out.push("Loss per minute, reading to reading: " + M.steps.map(fr).join(" -> "));
+  out.push("Readings: " + M.idx.map(i => mmss(i * M.I) + "=" + M.pts[i]).join("  "));
+  return out.join("\n");
+}
+$("#copy").onclick = async () => {
+  const t = summaryText();
+  try { await navigator.clipboard.writeText(t); toast("Summary copied"); }
+  catch (e) { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); toast("Summary copied"); } catch (_) { toast("Copy failed"); } a.remove(); }
+};
+function download(name, text, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+$("#csv").onclick = () => {
+  const M = compute(), L = ["index,time_s,pressure,delta,loss_per_min_interval,in_window"];
+  let pv = -1;
+  M.idx.forEach(i => {
+    const p = M.pts[i], d = pv >= 0 ? p - M.pts[pv] : null;
+    L.push([i + 1, i * M.I, p, d === null ? "" : d.toFixed(3), d === null ? "" : (-d / ((i - pv) * M.I / 60)).toFixed(3), M.ws >= 0 && i >= M.ws && i <= M.we ? 1 : 0].join(","));
+    pv = i;
+  });
+  const O = M.overall;
+  if (O) {
+    L.push("", "period,mode,start_s,end_s,start,end,min_pressure,max_pressure,loss,loss_per_min,loss_per_min_last_n,loss_rate_trend,final,pass,failed");
+    L.push(["period", M.mode, M.ws * M.I, M.we * M.I, O.start, O.end, O.lo, O.hi, O.loss.toFixed(3), O.rate.toFixed(3), O.rs.rate.toFixed(3), M.rateTrend ? M.rateTrend.label : "", M.complete, O.pass, O.viol.join("|")].join(","));
+  }
+  L.push("", "section,start_s,end_s,start,end,loss,loss_per_min,trend,within_limit");
+  M.sections.forEach((s, k) => L.push([k + 1, s.a * M.I, s.b * M.I, s.start, s.end, s.loss.toFixed(3), s.rate.toFixed(3), s.trend, s.rateOk].join(",")));
+  download("pressure-test-" + stamp() + ".csv", L.join("\r\n"), "text/csv");
+};
+$("#dl").onclick = () => { if (ORIGINAL) { const n = `JJs-Pressure-Test-Analyzer-REV${REV}.html`; download(n, ORIGINAL, "text/html"); toast("Saved " + n); } };
+
+
+/* ---------- data import: CSV / tab / pasted text ---------- */
+const RE_DATE = /^(\d{1,4})[./-](\d{1,2})[./-](\d{1,4})$/;
+const RE_TIME = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:[.,](\d+))?)?\s*([AaPp][Mm])?$/;
+const RE_NUM = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const IMP = {};
+
+function splitLine(line, d) {          // d = delimiter char, null = whitespace; handles 'single' and "double" quoted fields
+  const out = []; let cur = "", q = null;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) { if (ch === q) q = null; else cur += ch; }
+    else if ((ch === "'" || ch === '"') && cur.trim() === "") q = ch;
+    else if (d ? ch === d : /\s/.test(ch)) { out.push(cur); cur = ""; if (!d) while (/\s/.test(line[i + 1] || "x")) i++; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out.map(x => x.trim());
+}
+function delimScore(lines, d) {          // how many lines share the most common (>=1) field count for delimiter d
+  const freq = {};
+  lines.forEach(l => { const c = splitLine(l, d).length - 1; if (c >= 1) freq[c] = (freq[c] || 0) + 1; });
+  const e = Object.entries(freq).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0];
+  return e ? +e[1] : 0;
+}
+function detectDelim(lines) {
+  const sample = lines.length > 400 ? lines.filter((_, i) => i % Math.ceil(lines.length / 400) === 0) : lines;
+  let best = "\n", bestN = 0;
+  for (const d of ["\t", ";", ",", "|", null]) {      // earlier choices win ties
+    const n = delimScore(sample, d);
+    if (n > bestN) { best = d; bestN = n; }
+  }
+  return bestN >= Math.min(2, sample.length) && bestN >= sample.length * 0.3 ? best : "\n";
+}
+function numConv(x, mode) {
+  let t = String(x).replace(/\s/g, "");
+  if (mode === "thousands") t = t.replace(/,/g, ""); else if (mode === "decimal") t = t.replace(",", ".");
+  return RE_NUM.test(t) ? t : null;     // returns the cleaned numeric string
+}
+function dateOrder(cells) {
+  const parts = cells.slice(0, 500).map(x => String(x).match(RE_DATE)).filter(Boolean);
+  if (!parts.length) return "dmy";
+  if (parts[0][1].length === 4) return "ymd";
+  let a12 = false, b12 = false;
+  parts.forEach(m => { if (+m[1] > 12) a12 = true; if (+m[2] > 12) b12 = true; });
+  if (a12 && !b12) return "dmy"; if (b12 && !a12) return "mdy";
+  return cells[0].match(/[./-]/)[0] === "/" ? "mdy" : "dmy";
+}
+function dateMs(str, order) {
+  const m = str.match(RE_DATE); if (!m) return NaN;
+  let y, mo, d; const a = +m[1], b = +m[2], c = +m[3];
+  if (order === "ymd") { y = a; mo = b; d = c; } else if (order === "mdy") { mo = a; d = b; y = c; } else { d = a; mo = b; y = c; }
+  if (y < 100) y += 2000;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return NaN;
+  return Date.UTC(y, mo - 1, d);
+}
+function timeMs(str) {
+  const m = str.match(RE_TIME); if (!m) return NaN;
+  let h = +m[1]; const mi = +m[2], se = +(m[3] || 0), fr = m[4] ? +("0." + m[4]) : 0;
+  if (m[5]) { const pm = /p/i.test(m[5]); if (h === 12) h = 0; if (pm) h += 12; }
+  if (h > 23 || mi > 59 || se > 59) return NaN;
+  return ((h * 60 + mi) * 60 + se + fr) * 1000;
+}
+function fmtDT(ms) { const d = new Date(ms); const p = n => String(n).padStart(2, "0");
+  return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`; }
+const ivLabel = sec => (sec >= 60 && Math.abs(sec / 60 - Math.round(sec / 60)) < 1e-9 ? `${Math.round(sec / 60)} min` : `${+sec.toFixed(3)} s`);
+
+function parseText(text) {
+  text = text.replace(/^﻿/, "").replace(/\u0000/g, "");
+  const lines = text.split(/\r\n|\r|\n/).map(l => l.trim()).filter(l => l !== "");
+  if (!lines.length) return {error: "There is no data in that file or text."};
+  const delim = detectDelim(lines);
+  let grid = lines.map(l => splitLine(l, delim));
+  const wf = {}; grid.forEach(r => { wf[r.length] = (wf[r.length] || 0) + 1; });
+  const width = +Object.entries(wf).sort((a, b) => b[1] - a[1])[0][0];
+  const ignored = grid.filter(r => r.length !== width).length;       // titles, notes, partial lines
+  grid = grid.filter(r => r.length === width);
+  const anyNum = r => r.some(c => numConv(c, "decimal") !== null);
+  const header = grid.length > 1 && !anyNum(grid[0]) ? grid[0] : null;
+  const body = header ? grid.slice(1) : grid;
+  const cols = [];
+  for (let c = 0; c < width; c++) {
+    const cells = body.map(r => r[c]).filter(x => x !== ""), samp = cells.slice(0, 300);
+    const frac = f => (samp.length ? samp.filter(f).length / samp.length : 0);
+    const col = {idx: c, name: header ? header[c] : "", type: "text", commaMode: "none"};
+    if (samp.length) {
+      if (frac(x => /^\S+[T\s]+\d/.test(x) && RE_DATE.test(x.split(/[T\s]+/)[0]) && RE_TIME.test(x.split(/[T\s]+/).slice(1).join(" "))) >= 0.9) col.type = "datetime";
+      else if (frac(x => RE_DATE.test(x)) >= 0.9) col.type = "date";
+      else if (frac(x => RE_TIME.test(x)) >= 0.9) col.type = "time";
+      else {
+        const hasDot = samp.some(x => x.includes(".")), hasComma = samp.some(x => x.includes(","));
+        col.commaMode = !hasComma ? "none" : hasDot || delim === "," ? "thousands" : "decimal";
+        if (frac(x => numConv(x, col.commaMode) !== null) >= 0.9) {
+          col.type = "number";
+          const nums = samp.map(x => numConv(x, col.commaMode)).filter(x => x !== null).map(parseFloat);
+          const flag = nums.every(v => v === 0 || v === 1);
+          const index = nums.length > 2 && nums.every((v, i) => Number.isInteger(v) && (i === 0 || v - nums[i - 1] === 1));
+          col.skip = flag || index;
+        }
+      }
+    }
+    cols.push(col);
+  }
+  const dtc = cols.find(c => c.type === "datetime"), dc = cols.find(c => c.type === "date"), tc = cols.find(c => c.type === "time");
+  const timeSrc = dtc ? {kind: "dt", c: dtc.idx} : dc && tc ? {kind: "dt2", d: dc.idx, t: tc.idx} : tc ? {kind: "t", t: tc.idx} : null;
+  let order = "dmy";
+  if (timeSrc && timeSrc.kind === "dt") order = dateOrder(body.map(r => r[timeSrc.c].split(/[T\s]+/)[0]));
+  if (timeSrc && timeSrc.kind === "dt2") order = dateOrder(body.map(r => r[timeSrc.d]));
+  const cand = cols.filter(c => c.type === "number" && !c.skip);
+  // label min/max columns when they bracket the value column (min <= value <= max on nearly every row)
+  for (let k = 0; k + 2 < cand.length; k++) {
+    const [a, b, c] = [cand[k], cand[k + 1], cand[k + 2]];
+    if (b.idx !== a.idx + 1 || c.idx !== b.idx + 1) continue;
+    let ok = 0, tot = 0;
+    body.slice(0, 300).forEach(r => { const v = [a, b, c].map(q => parseFloat(numConv(r[q.idx], q.commaMode))); if (v.every(Number.isFinite)) { tot++; if (v[1] <= v[0] && v[0] <= v[2]) ok++; } });
+    if (tot && ok / tot >= 0.95) { a.role = "value at the time mark"; b.role = "minimum within the interval"; c.role = "maximum within the interval"; }
+  }
+  return {delim, grid, header, body, cols, cand, timeSrc, order, width, ignored};
+}
+
+// pull (time, value) pairs for the chosen pressure column
+function extract(P, pCol) {
+  const col = P.cols[pCol], out = []; let skipped = 0, dayOff = 0, prevTod = null;
+  P.body.forEach((r, i) => {
+    const s = numConv(r[pCol], col.commaMode); if (s === null) { skipped++; return; }
+    let t = null; const T = P.timeSrc;
+    if (T) {
+      let ms = NaN;
+      if (T.kind === "dt") { const [dd, ...tt] = r[T.c].split(/[T\s]+/); ms = dateMs(dd, P.order) + timeMs(tt.join(" ")); }
+      else if (T.kind === "dt2") ms = dateMs(r[T.d], P.order) + timeMs(r[T.t]);
+      else { const tod = timeMs(r[T.t]); if (Number.isFinite(tod)) { if (prevTod !== null && tod < prevTod) dayOff++; prevTod = tod; ms = tod + dayOff * 86400000; } }
+      if (!Number.isFinite(ms)) { skipped++; return; }
+      t = ms;
+    }
+    out.push({i, t, v: parseFloat(s), s});
+  });
+  return {pts: out, skipped};
+}
+
+function buildImport(P, pCol, Gsel, force) {
+  const {pts, skipped} = extract(P, pCol), warns = [], res = {warns};
+  if (pts.length < 2) return {error: "Fewer than 2 usable readings were found in that column."};
+  const timed = P.timeSrc !== null;
+  let list = pts.slice();
+  let D = pos(S.interval, 60);
+  if (timed) {
+    if (list.some((p, i) => i && p.t < list[i - 1].t)) { list.sort((a, b) => a.t - b.t || a.i - b.i); warns.push("The rows were not in time order; they were sorted by time."); }
+    const dedup = []; list.forEach(p => { if (dedup.length && dedup[dedup.length - 1].t === p.t) dedup[dedup.length - 1] = p; else dedup.push(p); });
+    if (dedup.length < list.length) warns.push(`${list.length - dedup.length} rows had a duplicate timestamp (the later one was kept).`);
+    list = dedup;
+    const dl = list.slice(1).map((p, i) => (p.t - list[i].t) / 1000).sort((a, b) => a - b);
+    const cs = dl.length > 1500 ? dl.filter((_, i) => i % Math.ceil(dl.length / 1500) === 0) : dl;
+    let bc = null, bn = 0;
+    cs.forEach(c => { const tol = Math.max(0.5, c * 0.02), n = cs.filter(x => Math.abs(x - c) <= tol).length; if (n > bn || (n === bn && c < bc)) { bn = n; bc = c; } });
+    const grp = dl.filter(x => Math.abs(x - bc) <= Math.max(0.5, bc * 0.02));
+    D = Math.round(grp[Math.floor(grp.length / 2)] * 1000) / 1000;
+    const regular = grp.length / dl.length;
+    if (regular < 0.85) warns.push(`The readings are not evenly spaced (${Math.round(regular * 100)}% match the usual ${ivLabel(D)} step). This looks like event / set-point logging. Each reading is placed at its real time and the steps in between show as skipped.`);
+  } else {
+    warns.push("No date or time column was found, so the readings are assumed to be evenly spaced at your current reading interval.");
+    list.forEach((p, k) => { p.t = k * D * 1000; });
+  }
+  if (P.ignored) warns.push(`${P.ignored} line${P.ignored > 1 ? "s" : ""} that did not look like data (titles or notes) ${P.ignored > 1 ? "were" : "was"} skipped.`);
+  res.D = D;
+  const span = timed ? (list[list.length - 1].t - list[0].t) / 1000 : (list.length - 1) * D;
+  const base = Math.max(1, D), opts = [...new Set([base, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600])].filter(x => x >= base - 1e-9 && span / x + 1 <= MAXROWS).sort((a, b) => a - b);
+  if (!opts.length && !force) return {error: "That data spans too long for the reading list (limit " + MAXROWS + " rows)."};
+  const G = force && Gsel ? +Gsel : (Gsel && opts.includes(+Gsel) ? +Gsel : opts[0]);
+  res.opts = opts; res.G = G; res.list = list; res.timed = timed; res.t0Ms = timed ? list[0].t : null;
+  const rows = [], best = [];
+  if (true) {
+    const t0 = list[0].t;
+    list.forEach(p => {
+      const r = Math.round((p.t - t0) / (G * 1000)), err = Math.abs(p.t - (t0 + r * G * 1000));
+      if (r >= (force ? 1e6 : MAXROWS)) return;
+      if (best[r] === undefined || err < best[r]) { best[r] = err; rows[r] = p.s; }
+    });
+  }
+  for (let r = 0; r < rows.length; r++) if (rows[r] === undefined) rows[r] = "";
+  res.rows = rows;
+  res.count = rows.filter(x => x !== "").length;
+  res.first = timed ? fmtDT(list[0].t) : "first row"; res.last = timed ? fmtDT(list[list.length - 1].t) : "last row";
+  res.span = span;
+  if (skipped) warns.push(`${skipped} rows had no usable number in this column and were ignored.`);
+  if (G > D + 1e-9 && timed) warns.push(`Using every ${ivLabel(G)} (nearest reading to each step); ${list.length - res.count} readings are not used.`);
+  if (rows.length - res.count > 0 && timed && G <= D + 1e-9 && warns.every(w => !/not evenly/.test(w))) warns.push(`${rows.length - res.count} time steps have no reading (shown as skipped boxes).`);
+  if (timed && list.length > res.count && G <= D + 1e-9) warns.push("Some readings fell on the same time step; the closest was used.");
+  res.vals = rows.map(x => (x === "" ? null : parseFloat(x)));
+  return res;
+}
+
+
+const decs = x => { const m = String(x).trim().replace(",", ".").match(/\.(\d+)$/); return m ? m[1].length : 0; };
+// a typed value agrees with the file value when it matches at the precision it was typed (8210 ~ 8210.37)
+const sameVal = (typed, fileS) => Math.abs(parseFloat(String(typed).replace(",", ".")) - parseFloat(fileS)) <= Math.pow(10, -decs(typed)) + 1e-9;
+function planMerge(R, T0) {                   // place the file's readings by real time against an anchor (time of row 1)
+  const G = S.interval, best = new Map();
+  R.list.forEach(p => {
+    const r = Math.round((p.t - T0) / (G * 1000)), err = Math.abs(p.t - (T0 + r * G * 1000)), b = best.get(r);
+    if (!b || err < b.err) best.set(r, {s: p.s, err});
+  });
+  const keys = [...best.keys()], minR = Math.min(0, ...keys), maxR = Math.max(S.rows.length - 1, ...keys), shift = -minR;
+  if (maxR - minR + 1 > MAXROWS) return {error: `The combined data would need ${maxR - minR + 1} rows (limit ${MAXROWS}).`};
+  const out = new Array(maxR - minR + 1).fill("");
+  S.rows.forEach((v, i) => { out[i + shift] = String(v); });
+  let added = 0, changed = 0, same = 0;
+  best.forEach((b, r) => {
+    const i = r + shift, cur = String(out[i]).trim();
+    if (cur === "") added++; else if (sameVal(cur, b.s)) same++; else changed++;
+    out[i] = b.s;                                // the file is the record: its (more precise) value is kept
+  });
+  const overlap = same + changed;
+  return {rows: out, added, changed, same, shift, t0: T0 + minR * G * 1000, mismatch: overlap >= 3 && changed / overlap >= 0.3, overlap};
+}
+function planAppend(R) {                      // put the file's readings after the last reading already entered
+  let last = -1; S.rows.forEach((v, i) => { if (String(v).trim() !== "") last = i; });
+  const rows = S.rows.slice(0, last + 1);
+  R.rows.forEach((v, k) => { rows[last + 1 + k] = v; });
+  for (let i = 0; i < rows.length; i++) if (rows[i] === undefined) rows[i] = "";
+  if (rows.length > MAXROWS) return {error: `The appended data would need ${rows.length} rows (limit ${MAXROWS}).`};
+  return {rows, added: R.count, start: last + 2};
+}
+// find where typed readings sit in the file by comparing values (used when the typed readings have no clock times)
+function alignByValue(R) {
+  if (!R || !R.list) return null;
+  const G = S.interval, typed = [];
+  S.rows.forEach((v, i) => { const t = String(v).trim(), x = parseFloat(t.replace(",", ".")); if (t !== "" && Number.isFinite(x)) typed.push([i, x, Math.pow(10, -decs(t))]); });
+  if (typed.length < 3) return null;
+  const f = new Map(), t0 = R.list[0].t;
+  R.list.forEach(p => { const k = Math.round((p.t - t0) / (G * 1000)); if (!f.has(k)) f.set(k, parseFloat(p.s)); });
+  const ks = [...f.keys()], lo = Math.min(...ks) - typed[typed.length - 1][0], hi = Math.max(...ks) - typed[0][0];
+  let b1 = -1, d1 = null, b2 = -1;
+  for (let d = lo; d <= hi; d++) {
+    let sc = 0; typed.forEach(([i, x, u]) => { const y = f.get(i + d); if (y !== undefined && Math.abs(y - x) <= u + 1e-9) sc++; });
+    if (sc > b1) { b2 = b1; b1 = sc; d1 = d; } else if (sc > b2) b2 = sc;
+  }
+  if (b1 >= Math.max(3, Math.ceil(typed.length * 0.8)) && b1 - Math.max(b2, 0) >= 2) return {d: d1, T0: t0 + d1 * G * 1000, score: b1, n: typed.length};
+  return null;
+}
+let UNDO = null;
+function snapshot() { UNDO = JSON.parse(JSON.stringify({rows: S.rows, interval: S.interval, src: S.src, anch: S.anch, test: S.test, cFrom: S.cFrom, cTo: S.cTo, mode: S.mode})); $("#undo").hidden = false; }
+$("#undo").onclick = () => { if (!UNDO) return; Object.assign(S, UNDO); UNDO = null; $("#undo").hidden = true; $("#test").value = S.test; padRows(); changed(); toast("Undone. Your readings are back the way they were."); };
+
+function openModal(html) { $("#mbox").innerHTML = html; $("#modal").hidden = false; }
+function closeModal() { $("#modal").hidden = true; $("#mbox").innerHTML = ""; }
+$("#modal").addEventListener("mousedown", e => { if (e.target.id === "modal") closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden) closeModal(); });
+const esc = x => String(x).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function openPaste() {
+  openModal(`<h2>Paste data</h2><p class="sfx" style="margin:4px 0 12px">Paste rows copied from a CSV file, Excel or a text editor. Commas, tabs, semicolons and quoted values all work.</p>
+    <textarea id="pasteBox" placeholder="'03.11.2026','17:46:00','152.334617','152.247740','152.420349','1'&#10;'03.11.2026','17:47:00',..." spellcheck="false"></textarea>
+    <div class="mbtns"><button class="btn" id="pCancel">Cancel</button><button class="btn pri" id="pGo">Read data</button></div>`);
+  $("#pasteBox").focus();
+  $("#pCancel").onclick = closeModal;
+  $("#pGo").onclick = () => { const t = $("#pasteBox").value; if (!t.trim()) return; startImport(t, "pasted data"); };
+}
+
+function problem(title, msg, extra) {
+  openModal(`<h2>${esc(title)}</h2><p style="margin:10px 0">${msg}</p>${extra || ""}<div class="mbtns"><button class="btn pri" id="mOk">OK</button></div>`);
+  $("#mOk").onclick = closeModal;
+}
+function startImport(text, name, note) {
+  const P = parseText(text);
+  if (P.error) return problem("There is nothing to load", esc(P.error));
+  if (!P.cand.length) return problem("I couldn't find the pressure numbers", `I couldn't find a column of numbers in <b>${esc(name)}</b>. The file should have rows like:<br><code>'03.11.2026','17:46:00','152.334617',…</code><br>Here is what I read from the file:`, previewTable(P, -1));
+  const byName = P.cand.find(c => /press|psi|bar|kpa|gauge|wh\b|bh\b/i.test(c.name));
+  Object.assign(IMP, {P, name, note: note || "", pCol: (byName || P.cand[0]).idx, G: null, mode: null, userMode: false, rowTime: null, autoSwitched: false, anchorKind: null, T0: null, plan: null, R: null});
+  renderPreview();
+}
+function previewTable(P, sel) {
+  const head = P.cols.map(c => `<th class="${c.idx === sel ? "sel" : ""}">${esc(c.name || "Col " + (c.idx + 1))}</th>`).join("");
+  const rows = P.body.slice(0, 6).map(r => `<tr>${r.map((x, i) => `<td class="${i === sel ? "sel" : ""}">${esc(x)}</td>`).join("")}</tr>`).join("");
+  return `<div class="prevtab"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function dayStart(ms) { return Math.floor(ms / 86400000) * 86400000; }
+function renderPreview() {
+  const {P, name} = IMP;
+  const have = S.rows.filter(r => String(r).trim() !== "").length, hasData = have > 0;
+  const timedFile = P.timeSrc !== null;
+  // 1) read the file at the interval the program is using (so rows line up), or choose one when starting fresh
+  const first = buildImport(P, IMP.pCol, IMP.G, false);
+  if (first.error) return problem("I couldn't use that data", esc(first.error), previewTable(P, IMP.pCol));
+  const anchored = timedFile && !!S.anch && S.anch.iv === S.interval;
+  let al = null;
+  if (hasData && !anchored) al = alignByValue(buildImport(P, IMP.pCol, S.interval, true));
+  // 2) decide how to combine, automatically
+  if (!hasData) IMP.mode = "replace";
+  else if (!IMP.userMode) IMP.mode = anchored || al ? "merge" : timedFile ? "merge" : "append";
+  const force = IMP.mode !== "replace";
+  const R = force ? buildImport(P, IMP.pCol, S.interval, true) : first;
+  if (R.error) return problem("I couldn't use that data", esc(R.error), previewTable(P, IMP.pCol));
+  IMP.R = R;
+  let plan = null, anchorTxt = "";
+  if (IMP.mode === "merge") {
+    let T0;
+    if (anchored) { T0 = S.anch.t0; anchorTxt = "The file's times were matched to your loaded readings by clock time."; }
+    else if (al) { T0 = al.T0; anchorTxt = `Your typed readings have no clock times, so they were matched to the file by their values (your reading 1 = ${fmtDT(al.T0)}).`; }
+    else { T0 = IMP.rowTime !== null ? IMP.rowTime : R.list[0].t; anchorTxt = timedFile ? `Your typed readings have no clock times and could not be matched to the file by their values, so reading 1 is assumed to be at ${fmtDT(T0)}, the first time in the file.` : "No times in the file: readings are matched by position."; }
+    plan = planMerge(R, T0); IMP.T0 = T0; IMP.anchorKind = anchored ? "time" : al ? "value" : "assumed";
+    if (plan.mismatch && !IMP.userMode) { IMP.mode = "replace"; IMP.autoSwitched = true; plan = null; anchorTxt = ""; }
+  }
+  if (IMP.mode === "append") plan = planAppend(R);
+  const finalR = IMP.mode === "replace" ? first : R;
+  IMP.plan = plan; IMP.R = finalR;
+  // 3) plain-language summary
+  const pts = finalR.vals, nums = pts.filter(v => v !== null), lo = Math.min(...nums), hi = Math.max(...nums), rg = hi - lo || 1;
+  const path = pts.map((v, i) => v === null ? "" : `${i && pts[i - 1] !== null ? "L" : "M"}${(i / Math.max(1, pts.length - 1) * 600).toFixed(1)},${(66 - (v - lo) / rg * 60).toFixed(1)}`).join("");
+  const lines = [];
+  lines.push(`Found <b>${finalR.count} readings</b>${timedFile ? ` from <b>${finalR.first}</b> to <b>${finalR.last}</b> (${mmss(finalR.span)})` : ""}, one every <b>${ivLabel(finalR.G)}</b>.`);
+  let goLabel = "Load readings", bad = false;
+  if (IMP.mode === "replace") lines.push(hasData ? `<span class="w">All ${have} readings you have now will be replaced by this file.</span>` : "These will be loaded into the reading list.");
+  if (IMP.autoSwitched && hasData) lines.push(`<span class="w">⚠ Many of the readings already in the program are different from the same times in this file (${IMP.mismatchInfo || "different values"}). This usually means it is a different file or gauge, so it will replace the current readings instead of merging. Open Options to change that.</span>`);
+  if (IMP.mode === "merge" && plan) {
+    goLabel = "Add to my readings";
+    if (plan.error) { bad = true; lines.push(`<span class="w">⚠ ${esc(plan.error)}</span>`); }
+    else {
+      lines.push(anchorTxt);
+      lines.push(plan.added + plan.changed === 0 ? "<b>Nothing new in this file.</b> Every reading is already in the program." : `<b class="good">${plan.added} new</b> readings will be added${plan.changed ? `, <b>${plan.changed} existing readings will be updated</b> to the file's values` : ""}. ${plan.same} were already there.`);
+      if (plan.shift) lines.push(`This file starts ${plan.shift} step${plan.shift > 1 ? "s" : ""} before your first reading, so earlier rows are added at the top.`);
+    }
+  }
+  if (IMP.mode === "append" && plan) { goLabel = "Add after my last reading"; lines.push(plan.error ? `<span class="w">⚠ ${esc(plan.error)}</span>` : `<b>${plan.added}</b> readings will be added after your last reading (row ${plan.start} onward).`); bad = !!plan.error; }
+  finalR.warns.forEach(w => lines.push(`<span class="w">⚠ ${esc(w)}</span>`));
+  if (IMP.note) lines.push(`<span class="w">⚠ ${esc(IMP.note)}</span>`);
+  const sel = `<select id="impCol">${P.cand.map(c => `<option value="${c.idx}"${c.idx === IMP.pCol ? " selected" : ""}>${esc(c.name || "Column " + (c.idx + 1))}${c.role ? " — " + c.role : ""} (e.g. ${esc(P.body[0][c.idx])})</option>`).join("")}</select>`;
+  const modes = !hasData ? "" : `<div class="impmode"><div class="sfx" style="margin-bottom:4px">When there are already readings in the program:</div>
+    <label><input type="radio" name="imode" value="replace"${IMP.mode === "replace" ? " checked" : ""}> <b>Replace</b> everything with this file</label>
+    <label><input type="radio" name="imode" value="merge"${IMP.mode === "merge" ? " checked" : ""}> <b>Match by time</b>: add new readings, update ones that changed (best when the file has grown since last time)</label>
+    <label><input type="radio" name="imode" value="append"${IMP.mode === "append" ? " checked" : ""}> <b>Add after</b> the last reading already entered (ignores times)</label></div>`;
+  const rowTimeBox = IMP.mode === "merge" && IMP.anchorKind === "assumed" && timedFile ? `<label>Your reading 1 was taken at<input id="impRow1" type="text" value="${esc(new Date(IMP.T0).toISOString().slice(11, 19))}" style="display:block;margin-top:5px;width:120px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit" placeholder="hh:mm:ss"></label>` : "";
+  const ivBox = force ? `<label>Reading interval<span style="display:block;margin-top:9px;color:var(--text)">${ivLabel(S.interval)} (kept so rows line up)</span></label>` : `<label>Reading interval<select id="impIv">${first.opts.map(o => `<option value="${o}"${o === first.G ? " selected" : ""}>${ivLabel(o)}${o === first.opts[0] ? " (as recorded)" : ""}</option>`).join("")}</select></label>`;
+  const open = IMP.userMode || IMP.autoSwitched || IMP.anchorKind === "assumed" || bad ? " open" : "";
+  openModal(`<h2>Load data from ${esc(name)}</h2>
+    <div class="impinfo" style="margin-top:12px">${lines.map(l => `<div>${l}</div>`).join("")}</div>
+    <svg class="spark" viewBox="0 0 600 70" preserveAspectRatio="none"><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="1.6"/></svg>
+    <details${open}><summary class="sfx" style="cursor:pointer;margin:8px 0">Options (normally not needed)</summary>${modes}
+      <div class="impgrid"><label>Pressure column${sel}</label>${ivBox}${rowTimeBox}</div>${previewTable(P, IMP.pCol)}</details>
+    <div class="mbtns"><button class="btn" id="iCancel">Cancel</button><button class="btn pri" id="iGo"${bad ? " disabled" : ""}>${goLabel}</button></div>`);
+  $("#impCol").onchange = e => { IMP.pCol = +e.target.value; IMP.G = null; renderPreview(); };
+  if ($("#impIv")) $("#impIv").onchange = e => { IMP.G = +e.target.value; renderPreview(); };
+  document.querySelectorAll('input[name="imode"]').forEach(r => r.onchange = e => { IMP.mode = e.target.value; IMP.userMode = true; IMP.autoSwitched = false; renderPreview(); });
+  if ($("#impRow1")) $("#impRow1").onchange = e => { const ms = timeMs(e.target.value.trim()); if (Number.isFinite(ms)) { IMP.rowTime = dayStart(R.list[0].t) + ms; renderPreview(); } else toast("Type the time like 17:46:00"); };
+  $("#iCancel").onclick = closeModal;
+  $("#iGo").onclick = applyImport;
+}
+function applyImport() {
+  const R = IMP.R; if (!R) return;
+  const clean = x => x.replace(/[<>&"'`]/g, "");
+  snapshot();
+  const timedFile = IMP.P.timeSrc !== null;
+  if (IMP.mode === "replace") {
+    S.rows = R.rows.slice(0, MAXROWS); S.interval = R.G; S.cFrom = S.cTo = "";
+    S.anch = timedFile ? {t0: R.t0Ms, iv: R.G} : null;
+    S.src = {how: "replace", name: clean(IMP.name), n: R.count, first: R.first, last: R.last};
+  } else {
+    const pl = IMP.plan; if (!pl || pl.error) return;
+    S.rows = pl.rows;
+    if (IMP.mode === "merge") {
+      if (timedFile) S.anch = {t0: pl.t0, iv: S.interval};
+      else if (S.anch && pl.shift) S.anch = {t0: S.anch.t0 - pl.shift * S.interval * 1000, iv: S.anch.iv};
+      if (pl.shift) S.cFrom = S.cTo = "";
+      S.src = {how: "merge", name: clean(IMP.name), added: pl.added, changed: pl.changed, same: pl.same};
+    } else S.src = {how: "append", name: clean(IMP.name), added: pl.added};
+  }
+  if (!S.test) S.test = clean(IMP.name.replace(/\.[^.]+$/, ""));
+  if (!S.rows.length || String(S.rows[S.rows.length - 1]).trim() !== "") S.rows.push("");
+  $("#test").value = S.test;
+  closeModal(); changed();
+  const sr = S.src;
+  toast(sr.how === "merge" ? `Added ${sr.added} new readings${sr.changed ? `, updated ${sr.changed}` : ""} from ${IMP.name}. (↶ Undo is below the readings.)` : sr.how === "append" ? `Added ${sr.added} readings from ${IMP.name}.` : `Loaded ${R.count} readings from ${IMP.name}.`, 4500);
+}
+
+function sniffBinary(u8) {
+  const h = (n) => String.fromCharCode(...u8.slice(0, n));
+  if (h(4) === "PK\x03\x04") return "That looks like an Excel (.xlsx) workbook. In Excel choose <b>File ▸ Save As ▸ CSV</b>, then load the CSV file. (You can also select the cells in Excel, copy, and use <b>Paste data</b>.)";
+  if (h(4) === "\xD0\xCF\x11\xE0") return "That looks like an old Excel (.xls) file. In Excel choose <b>File ▸ Save As ▸ CSV</b>, then load the CSV file. (You can also select the cells, copy, and use <b>Paste data</b>.)";
+  if (h(4) === "%PDF") return "That is a PDF, not a data file.";
+  if (/^(\x89PNG|GIF8|\xFF\xD8\xFF|MZ)/.test(h(4)) || h(2) === "MZ") return "That doesn't look like a data file (it is a picture or a program).";
+  const head = u8.slice(0, 4096); let nul = 0; for (const b of head) if (b === 0) nul++;
+  const utf16 = (u8[0] === 0xFF && u8[1] === 0xFE) || (u8[0] === 0xFE && u8[1] === 0xFF);
+  if (!utf16 && nul > head.length * 0.02) return "That doesn't look like a text or CSV file.";
+  return "";
+}
+async function openFiles(files) {
+  const f = files && files[0]; if (!f) return;
+  if (f.size > 30e6) return problem("That file is too big", "Files over 30 MB can't be loaded. Save only the part of the test you need and try again.");
+  try {
+    const buf = await f.arrayBuffer(), u8 = new Uint8Array(buf), bad = sniffBinary(u8);
+    if (bad) return problem("I can't read that file", bad);
+    const enc = u8[0] === 0xFF && u8[1] === 0xFE ? "utf-16le" : u8[0] === 0xFE && u8[1] === 0xFF ? "utf-16be" : "utf-8";
+    startImport(new TextDecoder(enc).decode(buf), f.name, files.length > 1 ? `${files.length} files were dropped. Only the first one (${f.name}) is loaded. Load the others one at a time.` : "");
+  } catch (e) { problem("I couldn't open that file", "Something went wrong reading it. Try saving it again, or select the data, copy it and use <b>Paste data</b>."); }
+}
+$("#openBtn").onclick = () => $("#fileIn").click();
+$("#fileIn").addEventListener("change", e => { openFiles([...e.target.files]); e.target.value = ""; });
+$("#paste").onclick = openPaste;
+$("#pasteLink").onclick = e => { e.preventDefault(); openPaste(); };
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+window.addEventListener("dragenter", e => { if (hasFiles(e)) { dragDepth++; $("#dropOv").hidden = false; } });
+window.addEventListener("dragover", e => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener("dragleave", e => { if (hasFiles(e) && --dragDepth <= 0) { dragDepth = 0; $("#dropOv").hidden = true; } });
+window.addEventListener("drop", e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; $("#dropOv").hidden = true; openFiles([...e.dataTransfer.files]); });
+document.addEventListener("paste", e => {      // multi-line / tabbed text pasted anywhere = data; a single number still goes into the box
+  if (!$("#modal").hidden) return;
+  const t = e.clipboardData && e.clipboardData.getData("text");
+  if (t && /[\r\n\t]/.test(t.trim())) { e.preventDefault(); startImport(t, "pasted data"); }
+});
+
+
+/* ---------- chart readout: cursor values and live calculation of a selected range ---------- */
+function selPanel(M, ws, we, title, live) {
+  const u = S.unit;
+  if (ws < 0 || we < 0 || ws >= we || !M.idx.length) return `<div class="stitle">${esc(title)}</div><div class="empty" style="padding:10px 0">${M.winMsg ? esc(M.winMsg) : "Enter at least two readings, then drag across the chart to calculate any part of the test."}</div>`;
+  const E = M.evalRange(ws, we), sg = E.sg, final = we - ws >= M.nT, pass = E.viol.length === 0;
+  const pill = final ? `<span class="pill ${pass ? "pass" : "fail"}">${pass ? "PASS" : "FAIL"}</span>` : `<span class="pill live">${E.viol.length ? "OUTSIDE LIMIT" : "WITHIN LIMIT"} · SHORTER THAN ${S.duration} MIN</span>`;
+  const f = (k, v, sub) => `<div class="fact"><div class="k">${k}</div><div class="v">${v}${sub ? ` <small>${sub}</small>` : ""}</div></div>`;
+  const rl = M.rateMin > 0 ? `last ${M.rateMin} min` : "whole period";
+  const T = E.tr;
+  const li = [];
+  if (M.pMin > 0) li.push(`<li class="${E.rangeOk ? "ok" : "no"}">Pressure ${E.rangeOk ? "stayed" : "did not stay"} between ${M.pMin} and ${M.pMax} ${u} (${fp(E.lo)} to ${fp(E.hi)})</li>`);
+  li.push(`<li class="${E.rs.rateOk ? "ok" : "no"}">Loss rate over the ${rl}: ${fr(E.rs.rate)} ${E.rs.rateOk ? (S.incl ? "≤" : "&lt;") : (S.incl ? "&gt;" : "≥")} ${M.lim} ${u}/min</li>`);
+  if (M.maxLoss !== null) li.push(`<li class="${E.lossOk ? "ok" : "no"}">Total loss ${fp(sg.loss)} ${E.lossOk ? "≤" : "&gt;"} ${M.maxLoss} ${u}</li>`);
+  li.push(T ? `<li class="${T.good ? "ok" : (S.reqTrend ? "no" : "")}">Loss-rate trend: <b>${T.label.toLowerCase()}</b> (${fr(T.r1)} → ${fr(T.r2)} ${u}/min)</li>` : `<li>Loss-rate trend: needs a reading between the start and end</li>`);
+  return `<div class="shead"><span class="stitle${live ? " live" : ""}">${esc(title)}</span>${pill}<span class="sfx">${clkRow(ws)} → ${clkRow(we)} · elapsed ${mmss(ws * M.I)}–${mmss(we * M.I)}</span></div>
+    <div class="facts">${f("Duration", mmss(sg.mins * 60))}${f("Start pressure", fp(sg.start), u)}${f("End pressure", fp(sg.end), u)}${f("Lowest", fp(E.lo), u)}${f("Highest", fp(E.hi), u)}${f("Total loss", (sg.loss < 0 ? "+" : "") + fp(Math.abs(sg.loss)), u + (sg.loss < 0 ? " (rise)" : ""))}${f("Loss rate (whole)", fr(sg.rate), u + "/min")}${f("Loss rate (" + rl + ")", fr(E.rs.rate), u + "/min")}</div>
+    <ul class="checks" style="margin-top:12px">${li.join("")}</ul>`;
+}
+function plotPos(clientX, clientY) {      // pixel position -> {x (svg units), minutes, rect}
+  const svg = $("#chart svg"); if (!svg || !chartGeo) return null;
+  const r = svg.getBoundingClientRect(), x = (clientX - r.left) / r.width * chartGeo.W;
+  return {x, r, inside: x >= chartGeo.Lm && x <= chartGeo.Lm + chartGeo.pw, min: Math.max(0, Math.min(chartGeo.xmax, (x - chartGeo.Lm) / chartGeo.pw * chartGeo.xmax))};
+}
+function hideHover() { $("#hvLine").style.display = $("#hvDot").style.display = $("#hvTip").style.display = "none"; }
+function hover(e) {
+  const M = LASTM, P = plotPos(e.clientX, e.clientY);
+  if (!M || !P || !M.idx.length || !P.inside) { hideHover(); return; }
+  const row = M.nearest(P.min / chartGeo.st), v = M.pts[row];
+  const wr = $("#chartWrap").getBoundingClientRect(), g = chartGeo, k = P.r.width / g.W;
+  const px = P.r.left - wr.left + (g.Lm + row * g.st / g.xmax * g.pw) * k, py = P.r.top - wr.top + g.Y(v) * k;
+  const ln = $("#hvLine"), dot = $("#hvDot"), tip = $("#hvTip");
+  ln.style.display = dot.style.display = tip.style.display = "block";
+  ln.style.left = px + "px"; dot.style.left = px + "px"; dot.style.top = py + "px";
+  tip.innerHTML = `${esc(clkRow(row))} · ${esc(fp(v))} ${esc(S.unit)}<small>elapsed ${mmss(row * M.I)} · reading ${row + 1}</small>`;
+  const tw = tip.offsetWidth; tip.style.left = Math.max(4, Math.min(wr.width - tw - 4, px + 14)) + "px"; tip.style.top = Math.max(4, py - 52) + "px";
+  $("#chartCur").innerHTML = `Cursor: <b>${esc(clkRow(row))}</b> <span>(elapsed ${mmss(row * M.I)}, reading ${row + 1})</span> · pressure <b>${esc(fp(v))} ${esc(S.unit)}</b>`;
+}
+
+/* ---------- drag across the chart to choose the evaluated range ---------- */
+let drag = null;
+const cw = $("#chartWrap");
+cw.addEventListener("pointerdown", e => {
+  const svg = cw.querySelector("svg"); if (!svg || !chartGeo || e.button !== 0) return;
+  const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * chartGeo.W;
+  if (x < chartGeo.Lm || x > chartGeo.Lm + chartGeo.pw) return;
+  drag = {x0: e.clientX, r}; cw.setPointerCapture(e.pointerId); e.preventDefault();
+});
+let dragRaf = 0;
+cw.addEventListener("pointermove", e => {
+  if (!drag) { hover(e); return; }
+  const sb = $("#selBox"), wr = cw.getBoundingClientRect(), a = Math.min(drag.x0, e.clientX), b = Math.max(drag.x0, e.clientX);
+  sb.style.display = "block"; sb.style.left = (a - wr.left) + "px"; sb.style.width = (b - a) + "px";
+  hideHover();
+  const cx = e.clientX;
+  cancelAnimationFrame(dragRaf);
+  dragRaf = requestAnimationFrame(() => {      // calculate the selection on the fly
+    if (!drag || !LASTM || !chartGeo) return;
+    const tx = c => { const x = (c - drag.r.left) / drag.r.width * chartGeo.W; return Math.max(0, Math.min(chartGeo.xmax, (x - chartGeo.Lm) / chartGeo.pw * chartGeo.xmax)); };
+    let t0 = tx(drag.x0), t1 = tx(cx); if (t0 > t1) [t0, t1] = [t1, t0];
+    const M = LASTM, ra = M.nearest(t0 / chartGeo.st), rb = M.nearest(t1 / chartGeo.st);
+    $("#chartSel").innerHTML = selPanel(M, ra, rb, "Selection (release to judge this range)", true);
+  });
+});
+cw.addEventListener("pointerleave", () => { if (!drag) { hideHover(); $("#chartCur").innerHTML = "<span>Move the mouse over the chart to read the time and pressure.</span>"; } });
+cw.addEventListener("pointerup", e => {
+  if (!drag) return;
+  const d = drag; drag = null; $("#selBox").style.display = "none";
+  cancelAnimationFrame(dragRaf);
+  if (Math.abs(e.clientX - d.x0) < 6 || !chartGeo) { update(); return; }
+  const tx = cx => Math.max(0, Math.min(chartGeo.xmax, ((cx - d.r.left) / d.r.width * chartGeo.W - chartGeo.Lm) / chartGeo.pw * chartGeo.xmax));
+  let t0 = tx(d.x0), t1 = tx(e.clientX); if (t0 > t1) [t0, t1] = [t1, t0];
+  S.mode = "custom"; S.cFrom = String(Math.round(t0 * 100) / 100); S.cTo = String(Math.round(t1 * 100) / 100);
+  buildBar(); update();
+  toast("Judging the selected part of the test. The result is below the chart and on the Live Test tab.", 3000);
+});
+cw.addEventListener("pointercancel", () => { drag = null; $("#selBox").style.display = "none"; if (LASTM) update(); });
+
+/* ---------- init ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+  ORIGINAL = "<!doctype html>\n" + document.documentElement.outerHTML;  // pristine copy, captured before the UI is built
+  $("#test").value = S.test;
+  padRows(); ensureRows(); buildBar(); buildML(); update();
+});
+</script>
+</body>
+</html>
