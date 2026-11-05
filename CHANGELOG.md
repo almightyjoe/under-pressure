@@ -1,5 +1,8 @@
 # JJ's Pressure Test Analyzer — changelog
 
+## REV 1.8 (desktop)
+- Phone-width screens: the pressure box in the readings list is wider, so a full reading such as 10000.5 fits (the Avg/min column is hidden at that width). Wider screens are unchanged.
+
 ## REV 1.7 (desktop)
 - Minimum test pressure quick buttons: **4,500 / 5,000 / 7,500 / 8,000 / 10,000** (or type any number). The band (for example 8,000–8,400) is shown next to it.
 - **Maximum test pressure** can be set exactly in Settings (blank = minimum + 5%).
